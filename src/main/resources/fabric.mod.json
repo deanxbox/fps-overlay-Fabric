@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "fps_overlay",
+  "version": "${version}",
+  "name": "Fps Overlay",
+  "description": "Displays a minimal performance overlay.",
+  "authors": [
+    "Hicham"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "net.hicham.fps_overlay.FpsOverlayMod"
+    ],
+    "modmenu": [
+      "net.hicham.fps_overlay.ModMenuIntegration"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "1.21.11",
+    "modmenu": "*",
+    "cloth-config": ">=15.0.0"
+  },
+  "custom": {
+    "modmenu:clientConfig": "net.hicham.fps_overlay.ModMenuIntegration::getModConfigScreenFactory"
+  }
+}
