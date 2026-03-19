@@ -15,7 +15,7 @@ public class ConfigManager {
     private static final AtomicBoolean initialized = new AtomicBoolean(false);
 
     @SuppressWarnings("null")
-    public static final Event<ConfigChangedCallback> CONFIG_CHANGED = EventFactory.createArrayBacked(
+    public static final Event<ConfigChangedCallback> CONFIG_CHANGED = java.util.Objects.requireNonNull(EventFactory.createArrayBacked(
             ConfigChangedCallback.class,
             (listeners) -> () -> {
                 for (ConfigChangedCallback listener : listeners) {
@@ -26,7 +26,7 @@ public class ConfigManager {
                     }
                 }
             }
-    );
+    ));
 
     @FunctionalInterface
     public interface ConfigChangedCallback {

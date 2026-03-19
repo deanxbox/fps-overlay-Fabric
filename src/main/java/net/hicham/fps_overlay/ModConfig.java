@@ -21,16 +21,19 @@ public class ModConfig {
                 return instance;
         }
 
+        // Available overlay positions on the screen
         public enum OverlayPosition {
                 TOP_LEFT, TOP_RIGHT, TOP_CENTER, BOTTOM_LEFT, BOTTOM_RIGHT
         }
 
+        // HUD Layout Style
         public enum OverlayStyle {
                 DEFAULT, NAVBAR
         }
 
         public General general = new General();
 
+        // General Mod Settings
         public static class General {
                 public boolean enabled = true;
                 public boolean enableKeybindings = true;
@@ -41,6 +44,7 @@ public class ModConfig {
 
         public HUD hud = new HUD();
 
+        // HUD Modules Settings (Toggle individual counters)
         public static class HUD {
                 public boolean showFps = true;
                 public boolean showAverageFps = true;
@@ -48,10 +52,14 @@ public class ModConfig {
                 public boolean showMemory = true;
 
                 public boolean showPing = true;
+                public boolean show1PercentLow = true;
+                public boolean showMspt = true;
+                public boolean showTps = true;
         }
 
         public Appearance appearance = new Appearance();
 
+        // Appearance & Visual Settings
         public static class Appearance {
                 public OverlayPosition position = OverlayPosition.TOP_CENTER;
                 public OverlayStyle overlayStyle = OverlayStyle.NAVBAR;
@@ -61,13 +69,16 @@ public class ModConfig {
                 public int backgroundOpacity = 180;
 
                 public float hudScale = 0.65f;
+                public boolean adaptiveColors = true;
+
+                public boolean autoHideF3 = true;
         }
 
         public void validate() {
                 general.updateIntervalMs = Math.max(16, Math.min(1000, general.updateIntervalMs));
 
                 appearance.backgroundOpacity = Math.max(0, Math.min(255, appearance.backgroundOpacity));
-                appearance.hudScale = Math.max(0.2f, Math.min(2.0f, appearance.hudScale));
+                appearance.hudScale = Math.max(0.2f, Math.min(0.9f, appearance.hudScale));
 
                 if (appearance.position == null)
                         appearance.position = OverlayPosition.TOP_CENTER;
@@ -85,6 +96,7 @@ public class ModConfig {
                 load();
         }
 
+        // Persistence: Load config from JSON file
         @SuppressWarnings("unused")
         public static void load() {
                 if (configFile.exists()) {
@@ -103,6 +115,7 @@ public class ModConfig {
                 save();
         }
 
+        // Persistence: Save config to JSON file
         public static void save() {
                 if (instance != null && configFile != null) {
                         instance.validate();

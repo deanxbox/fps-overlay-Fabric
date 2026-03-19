@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// Main renderer for the FPS Overlay
 public class OverlayRenderer {
     private static ModConfig config;
 
@@ -20,18 +21,19 @@ public class OverlayRenderer {
     private static final int COLOR_CLEAN_VALUE = 0xFFFFFFFF;
     private static final int COLOR_CLEAN_LABEL = 0xFF839DB1;
     private static final int COLOR_CLEAN_UNIT = 0xFFC99566;
-    private static final int COLOR_CLEAN_PING = 0xFF2ED177;
     private static final int COLOR_CLEAN_DIVIDER = 0xFF354451;
 
+    private static final int COLOR_GOOD = 0xFF2ED177;
+    private static final int COLOR_MID = 0xFFFFD100;
+    private static final int COLOR_BAD = 0xFFFF4545;
+
     @SuppressWarnings("null")
-    private static final ThreadLocal<DecimalFormat> MEMORY_FORMAT = ThreadLocal
-            .withInitial(() -> new DecimalFormat("0.0"));
+    private static final ThreadLocal<DecimalFormat> MEMORY_FORMAT = java.util.Objects.requireNonNull(ThreadLocal
+            .withInitial(() -> new DecimalFormat("0.0")));
+
     @SuppressWarnings("null")
-    private static final ThreadLocal<DecimalFormat> PERCENT_FORMAT = ThreadLocal
-            .withInitial(() -> new DecimalFormat("0"));
-    @SuppressWarnings("null")
-    private static final ThreadLocal<DecimalFormat> AVG_FPS_FORMAT = ThreadLocal
-            .withInitial(() -> new DecimalFormat("0"));
+    private static final ThreadLocal<DecimalFormat> AVG_FPS_FORMAT = java.util.Objects.requireNonNull(ThreadLocal
+            .withInitial(() -> new DecimalFormat("0")));
 
     private static final Map<String, Text> TEXT_CACHE = new HashMap<>();
     private static boolean textCacheInitialized = false;
@@ -48,11 +50,18 @@ public class OverlayRenderer {
         config = configData;
     }
 
+    // Main render entry point called by HudRenderCallback
     public static void render(DrawContext ctx, MinecraftClient client) {
         if (config == null || !config.general.enabled)
             return;
 
         ensureTextCacheInitialized();
+
+        PerformanceTracker tracker = PerformanceTracker.getInstance();
+        tracker.recordFrame();
+
+        if (config.appearance.autoHideF3 && client.getDebugHud().shouldShowDebugHud())
+            return;
 
         List<OverlayLine> linesToRender = prepareLines();
         if (linesToRender.isEmpty())
@@ -84,11 +93,15 @@ public class OverlayRenderer {
             TEXT_CACHE.put("ping", Text.translatable("text.fps_overlay.ping"));
             TEXT_CACHE.put("ms", Text.translatable("text.fps_overlay.ms"));
             TEXT_CACHE.put("gb", Text.translatable("text.fps_overlay.gb"));
+            TEXT_CACHE.put("tps", Text.translatable("text.fps_overlay.tps"));
+            TEXT_CACHE.put("mspt", Text.translatable("text.fps_overlay.mspt"));
+            TEXT_CACHE.put("low", Text.translatable("text.fps_overlay.1percent_low"));
 
             textCacheInitialized = true;
         }
     }
 
+    // Prepare the list of lines to be rendered based on user configuration
     private static List<OverlayLine> prepareLines() {
         List<OverlayLine> activeLines = new ArrayList<>(4);
         PerformanceTracker tracker = PerformanceTracker.getInstance();
@@ -126,6 +139,32 @@ public class OverlayRenderer {
             activeLines.add(line);
         }
 
+        if (config.hud.show1PercentLow) {
+            OverlayLine line = REUSABLE_LINES.size() > lineIndex ? REUSABLE_LINES.get(lineIndex++) : new OverlayLine();
+            line.reset();
+            line.type = "low";
+            line.addPart(Text.literal(String.valueOf(tracker.getOnePercentLow())));
+            activeLines.add(line);
+        }
+
+        if (config.hud.showMspt) {
+            OverlayLine line = REUSABLE_LINES.size() > lineIndex ? REUSABLE_LINES.get(lineIndex++) : new OverlayLine();
+            line.reset();
+            line.type = "mspt";
+            double mspt = tracker.getMspt();
+            line.addPart(Text.literal(MEMORY_FORMAT.get().format(mspt)));
+            activeLines.add(line);
+        }
+
+        if (config.hud.showTps) {
+            OverlayLine line = REUSABLE_LINES.size() > lineIndex ? REUSABLE_LINES.get(lineIndex++) : new OverlayLine();
+            line.reset();
+            line.type = "tps";
+            double tps = tracker.getTps();
+            line.addPart(Text.literal(MEMORY_FORMAT.get().format(tps)));
+            activeLines.add(line);
+        }
+
         return activeLines;
     }
 
@@ -157,6 +196,7 @@ public class OverlayRenderer {
         line.addPart(Text.literal(String.valueOf(ping)));
     }
 
+    // Route to the appropriate style renderer
     private static void renderLines(DrawContext ctx, MinecraftClient client, List<OverlayLine> segments) {
         float scale = config.appearance.hudScale;
         int sw = (int) (ctx.getScaledWindowWidth() / scale);
@@ -169,6 +209,7 @@ public class OverlayRenderer {
         }
     }
 
+    // Horizontal Navbar Style Renderer
     private static void renderNavbar(DrawContext ctx, MinecraftClient client, List<OverlayLine> lines, int screenWidth,
             int screenHeight) {
         TextRenderer renderer = client.textRenderer;
@@ -186,7 +227,7 @@ public class OverlayRenderer {
             // Construct part: "LABEL Value unit"
             segments.add(Text.literal(label + " ").withColor(COLOR_CLEAN_LABEL));
 
-            int valueColor = "ping".equals(line.type) && "0".equals(value) ? COLOR_CLEAN_PING : COLOR_CLEAN_VALUE;
+            int valueColor = getAdaptiveColor(line.type, value);
             segments.add(Text.literal(value).withColor(valueColor));
 
             segments.add(Text.literal(unit).withColor(COLOR_CLEAN_UNIT));
@@ -219,6 +260,7 @@ public class OverlayRenderer {
         }
     }
 
+    // Vertical Box Style Renderer (Default)
     private static void renderDefault(DrawContext ctx, MinecraftClient client, List<OverlayLine> lines, int screenWidth,
             int screenHeight) {
         TextRenderer renderer = client.textRenderer;
@@ -256,10 +298,13 @@ public class OverlayRenderer {
 
     private static void renderDefaultRow(DrawContext ctx, TextRenderer renderer, OverlayLine line, int x, int y) {
         String label = switch (line.type) {
-            case "fps" -> "FPS";
-            case "avg" -> "AVG";
-            case "memory" -> "RAM";
-            case "ping" -> "PING";
+            case "fps" -> "Fps";
+            case "avg" -> "Avg";
+            case "low" -> "1%Low";
+            case "memory" -> "Ram";
+            case "ping" -> "Ping";
+            case "mspt" -> "Mspt";
+            case "tps" -> "Tps";
             default -> "";
         };
 
@@ -275,16 +320,50 @@ public class OverlayRenderer {
         int unitColor = COLOR_CLEAN_UNIT;
 
         if ("ping".equals(line.type)) {
-            int color = "0".equals(val) ? COLOR_CLEAN_PING : COLOR_CLEAN_VALUE;
+            int color = getAdaptiveColor(line.type, val);
             ctx.drawText(renderer, val, valueRightX - valWidth, y, color, shadow);
             renderScaledText(ctx, renderer, "ms", unitLeftX, y, unitColor, 0.65f, shadow);
         } else if ("memory".equals(line.type)) {
-            ctx.drawText(renderer, val, valueRightX - valWidth, y, COLOR_CLEAN_VALUE, shadow);
-            renderScaledText(ctx, renderer, "GB", unitLeftX, y, unitColor, 0.65f, shadow);
+            int color = getAdaptiveColor(line.type, val);
+            ctx.drawText(renderer, val, valueRightX - valWidth, y, color, shadow);
+            renderScaledText(ctx, renderer, "gb", unitLeftX, y, unitColor, 0.65f, shadow);
+        } else if ("mspt".equals(line.type)) {
+            int color = getAdaptiveColor(line.type, val);
+            ctx.drawText(renderer, val, valueRightX - valWidth, y, color, shadow);
+            renderScaledText(ctx, renderer, "ms", unitLeftX, y, unitColor, 0.65f, shadow);
+        } else if ("tps".equals(line.type)) {
+            int color = getAdaptiveColor(line.type, val);
+            ctx.drawText(renderer, val, valueRightX - valWidth, y, color, shadow);
+            renderScaledText(ctx, renderer, "tps", unitLeftX, y, unitColor, 0.65f, shadow);
         } else {
-            int color = "fps".equals(line.type) ? COLOR_CLEAN_VALUE : COLOR_CLEAN_LABEL;
+            int color = getAdaptiveColor(line.type, val);
             ctx.drawText(renderer, val, valueRightX - valWidth, y, color, shadow);
             renderScaledText(ctx, renderer, "fps", unitLeftX, y, unitColor, 0.65f, shadow);
+        }
+    }
+
+    // Determine text color based on performance thresholds
+    private static int getAdaptiveColor(String type, String value) {
+        if (!config.appearance.adaptiveColors)
+            return COLOR_CLEAN_VALUE;
+
+        try {
+            double val = Double.parseDouble(value.replace(",", "."));
+            return switch (type) {
+                case "fps", "avg", "low" -> (val >= 60) ? COLOR_GOOD : (val >= 30 ? COLOR_MID : COLOR_BAD);
+                case "ping" -> (val < 60) ? COLOR_GOOD : (val < 150 ? COLOR_MID : COLOR_BAD);
+                case "mspt" -> (val < 30) ? COLOR_GOOD : (val < 45 ? COLOR_MID : COLOR_BAD);
+                case "tps" -> (val >= 19.5) ? COLOR_GOOD : (val >= 15 ? COLOR_MID : COLOR_BAD);
+                case "memory" -> {
+                    // Memory is tougher because we need the percentage
+                    PerformanceTracker tracker = PerformanceTracker.getInstance();
+                    double pct = (double) tracker.getUsedMemory() / tracker.getMaxMemory();
+                    yield (pct < 0.75) ? COLOR_GOOD : (pct < 0.9 ? COLOR_MID : COLOR_BAD);
+                }
+                default -> COLOR_CLEAN_VALUE;
+            };
+        } catch (Exception e) {
+            return COLOR_CLEAN_VALUE;
         }
     }
 
@@ -308,6 +387,7 @@ public class OverlayRenderer {
         }
     }
 
+    // Helper to draw background rectangles with rounded corners
     private static void drawRoundedRect(DrawContext ctx, int x, int y, int width, int height, int radius, int color) {
         ctx.fill(x + radius, y, x + width - radius, y + height, color);
         ctx.fill(x, y + radius, x + radius, y + height - radius, color);
@@ -335,17 +415,22 @@ public class OverlayRenderer {
         return switch (type) {
             case "fps" -> "Fps";
             case "avg" -> "Avg";
+            case "low" -> "1%Low";
             case "memory" -> "Mem";
             case "ping" -> "Ping";
+            case "mspt" -> "Mspt";
+            case "tps" -> "Tps";
             default -> "";
         };
     }
 
     private static String getUnitForType(String type) {
         return switch (type) {
-            case "fps", "avg" -> " fps";
-            case "memory" -> "GB";
-            case "ping" -> " MS";
+            case "fps", "avg", "low", "1%low" -> " fps";
+            case "memory" -> " gb";
+            case "ping" -> " ms";
+            case "mspt" -> " ms";
+            case "tps" -> " tps";
             default -> "";
         };
     }
@@ -368,6 +453,7 @@ public class OverlayRenderer {
     }
 
     // Inner classes
+    // Helper structure for rendering lines
     private static class OverlayLine {
         final List<TextPart> parts = new ArrayList<>(5);
         String type = "";

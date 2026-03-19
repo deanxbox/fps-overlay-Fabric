@@ -37,8 +37,10 @@ public class ConfigScreenFactory {
                 ConfigEntryBuilder entryBuilder = builder.entryBuilder();
                 ModConfig config = ConfigManager.getConfig();
  
+                // --- HUD Modules Category ---
                 ConfigCategory hud = builder.getOrCreateCategory(Text.translatable(CATEGORY_HUD));
 
+                // General Enable Toggle
                 hud.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.enabled"),
                                                 config.general.enabled)
@@ -48,6 +50,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.general.enabled = value)
                                 .build());
 
+                // Show FPS
                 hud.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.showFps"), config.hud.showFps)
                                 .setDefaultValue(true)
@@ -56,6 +59,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.hud.showFps = value)
                                 .build());
 
+                // Show Average FPS
                 hud.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.showAverageFps"),
                                                 config.hud.showAverageFps)
@@ -65,6 +69,17 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.hud.showAverageFps = value)
                                 .build());
 
+                // Show 1% Low FPS
+                hud.addEntry(entryBuilder
+                                .startBooleanToggle(Text.translatable("option.fps_overlay.show1PercentLow"),
+                                                config.hud.show1PercentLow)
+                                .setDefaultValue(true)
+                                .setTooltip(Text.translatable("tooltip.fps_overlay.show1PercentLow"))
+                                .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
+                                .setSaveConsumer(value -> config.hud.show1PercentLow = value)
+                                .build());
+
+                // Show Memory Usage
                 hud.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.showMemory"),
                                                 config.hud.showMemory)
@@ -74,6 +89,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.hud.showMemory = value)
                                 .build());
 
+                // Show Ping
                 hud.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.showPing"),
                                                 config.hud.showPing)
@@ -82,9 +98,31 @@ public class ConfigScreenFactory {
                                 .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
                                 .setSaveConsumer(value -> config.hud.showPing = value)
                                 .build());
+
+                // Show MSPT
+                hud.addEntry(entryBuilder
+                                .startBooleanToggle(Text.translatable("option.fps_overlay.showMspt"),
+                                                config.hud.showMspt)
+                                .setDefaultValue(true)
+                                .setTooltip(Text.translatable("tooltip.fps_overlay.showMspt"))
+                                .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
+                                .setSaveConsumer(value -> config.hud.showMspt = value)
+                                .build());
+
+                // Show TPS
+                hud.addEntry(entryBuilder
+                                .startBooleanToggle(Text.translatable("option.fps_overlay.showTps"),
+                                                config.hud.showTps)
+                                .setDefaultValue(true)
+                                .setTooltip(Text.translatable("tooltip.fps_overlay.showTps"))
+                                .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
+                                .setSaveConsumer(value -> config.hud.showTps = value)
+                                .build());
  
+                // --- Appearance Category ---
                 ConfigCategory appearance = builder.getOrCreateCategory(Text.translatable(CATEGORY_APPEARANCE));
 
+                // Overlay Style (Navbar vs Vertical)
                 appearance.addEntry(entryBuilder.startEnumSelector(
                                 Text.translatable("option.fps_overlay.overlay_style"),
                                 OverlayStyle.class,
@@ -93,6 +131,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.appearance.overlayStyle = value)
                                 .build());
 
+                // Overlay Position
                 appearance.addEntry(entryBuilder.startEnumSelector(
                                 Text.translatable("option.fps_overlay.position"),
                                 OverlayPosition.class,
@@ -102,9 +141,10 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.appearance.position = value)
                                 .build());
 
+                // HUD Scale (Small, Normal, Big)
                 appearance.addEntry(entryBuilder
                                 .startSelector(Text.translatable("option.fps_overlay.hudScale"),
-                                                new Float[] { 0.65f, 0.85f, 1.0f },
+                                                new Float[] { 0.65f, 0.85f, 0.9f },
                                                 config.appearance.hudScale)
                                 .setDefaultValue(0.65f)
                                 .setNameProvider(val -> {
@@ -112,13 +152,14 @@ public class ConfigScreenFactory {
                                                 return Text.translatable("enum.fps_overlay.scale.small");
                                         if (val == 0.85f)
                                                 return Text.translatable("enum.fps_overlay.scale.normal");
-                                        if (val == 1.0f)
+                                        if (val == 0.9f)
                                                 return Text.translatable("enum.fps_overlay.scale.big");
                                         return Text.literal(val.toString());
                                 })
                                 .setSaveConsumer(value -> config.appearance.hudScale = value)
                                 .build());
 
+                // Update Interval (ms)
                 appearance.addEntry(entryBuilder
                                 .startSelector(Text.translatable("option.fps_overlay.updateInterval"),
                                                 new Integer[] { 16, 33, 50, 100, 250, 500, 1000 },
@@ -148,6 +189,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.general.updateIntervalMs = value)
                                 .build());
 
+                // Background Visibility
                 appearance.addEntry(entryBuilder
                                 .startBooleanToggle(Text.translatable("option.fps_overlay.showBackground"),
                                                 config.appearance.showBackground)
@@ -157,6 +199,7 @@ public class ConfigScreenFactory {
                                 .setSaveConsumer(value -> config.appearance.showBackground = value)
                                 .build());
 
+                // Background Opacity
                 appearance.addEntry(entryBuilder
                                 .startSelector(Text.translatable("option.fps_overlay.backgroundOpacity"),
                                                 new Integer[] { 0, 25, 50, 100, 150, 180, 200, 225, 255 },
@@ -188,6 +231,26 @@ public class ConfigScreenFactory {
                                         }
                                 })
                                 .setSaveConsumer(value -> config.appearance.backgroundOpacity = value)
+                                .build());
+
+                // Auto-hide with F3
+                appearance.addEntry(entryBuilder
+                                .startBooleanToggle(Text.translatable("option.fps_overlay.autoHideF3"),
+                                                config.appearance.autoHideF3)
+                                .setDefaultValue(true)
+                                .setTooltip(Text.translatable("tooltip.fps_overlay.autoHideF3"))
+                                .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
+                                .setSaveConsumer(value -> config.appearance.autoHideF3 = value)
+                                .build());
+
+                // Adaptive Performance Colors
+                appearance.addEntry(entryBuilder
+                                .startBooleanToggle(Text.translatable("option.fps_overlay.adaptiveColors"),
+                                                config.appearance.adaptiveColors)
+                                .setDefaultValue(true)
+                                .setTooltip(Text.translatable("tooltip.fps_overlay.adaptiveColors"))
+                                .setYesNoTextSupplier(val -> val ? Text.literal("[ ON ]") : Text.literal("[ OFF ]"))
+                                .setSaveConsumer(value -> config.appearance.adaptiveColors = value)
                                 .build());
 
                 return builder.build();
