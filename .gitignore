@@ -1,8 +1,30 @@
-.gradle/
-.idea/
-.vscode/
+# Build outputs
 build/
+*/build/
+
+# Gradle
+.gradle/
+!gradle/wrapper/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
 bin/
-out/
+
+# Local properties (tokens live in ~/.gradle/gradle.properties)
+local.properties
+
+# Runtime
 run/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Heap dumps
 *.hprof
