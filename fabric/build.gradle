@@ -1,0 +1,142 @@
+plugins {
+    id 'architectury-plugin'
+    id 'dev.architectury.loom'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.modrinth.minotaur'
+    id 'com.matthewprenger.cursegradle'
+}
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+loom {
+    silentMojangMappingsLicense()
+}
+
+base {
+    archivesName = "${project.archives_base_name}-fabric"
+}
+
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // Architectury API (Fabric)
+    modCompileOnly "dev.architectury:architectury-fabric:${project.architectury_api_version}"
+
+    // Cloth Config (Fabric)
+    modImplementation "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"
+
+    // Mod Menu (Fabric only)
+    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+    // Common module
+    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionFabric')) { transitive false }
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+               "mod_id": project.mod_id,
+               "mod_name": project.mod_name,
+               "mod_description": project.mod_description,
+               "mod_author": project.mod_author,
+               "mod_license": project.mod_license,
+               "minecraft_version": project.minecraft_version,
+               "fabric_loader_version": project.fabric_loader_version,
+               "mod_homepage": project.mod_homepage,
+               "mod_sources": project.mod_sources
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = 'dev-shadow'
+}
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = 'dev'
+}
+
+sourcesJar {
+    def commonSources = project(':common').sourcesJar
+    dependsOn commonSources
+    from commonSources.archiveFile.map { zipTree(it) }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}
+
+// ─── Publishing ───
+
+def changelogContent = rootProject.file("CHANGELOG.md").exists() ? rootProject.file("CHANGELOG.md").text : "No changelog provided."
+
+modrinth {
+    token = System.getenv("MODRINTH_TOKEN") ?: project.findProperty("modrinth_token") ?: ""
+    projectId = project.modrinth_project_id
+    versionNumber = "${project.mod_version}+fabric"
+    versionName = "${project.mod_name} ${project.mod_version} (Fabric)"
+    versionType = "release"
+    uploadFile = remapJar
+    changelog = changelogContent
+    gameVersions = [project.minecraft_version]
+    loaders = ["fabric"]
+    dependencies {
+        required.project "fabric-api"
+        required.project "cloth-config"
+        optional.project "modmenu"
+    }
+}
+
+def curseforgeId = project.findProperty('curseforge_project_id') ?: ''
+if (curseforgeId) {
+    curseforge {
+        apiKey = System.getenv("CURSEFORGE_TOKEN") ?: project.findProperty("curseforge_token") ?: ""
+        project {
+            id = curseforgeId
+            releaseType = "release"
+            addGameVersion project.minecraft_version
+            addGameVersion "Fabric"
+            addGameVersion "Java 21"
+            changelog = changelogContent
+            changelogType = "markdown"
+            mainArtifact(remapJar)
+            relations {
+                requiredDependency 'fabric-api'
+                requiredDependency 'cloth-config'
+                optionalDependency 'modmenu'
+            }
+        }
+    }
+    tasks.named("curseforge").configure { dependsOn(remapJar) }
+}
+
+tasks.named("modrinth").configure { dependsOn(remapJar) }
