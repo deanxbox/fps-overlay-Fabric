@@ -527,13 +527,20 @@ public class OverlayRenderer {
 
     private static void drawCorner(GuiGraphics context, int x, int y, int width, int height, boolean left, boolean top,
             int color) {
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
+        for (int j = 0; j < height; j++) {
+            int dy = top ? (height - 1 - j) : j;
+            // Find the horizontal span of pixels that are inside the circle for this row
+            int spanStart = -1;
+            int spanEnd = -1;
+            for (int i = 0; i < width; i++) {
                 int dx = left ? (width - 1 - i) : i;
-                int dy = top ? (height - 1 - j) : j;
                 if (dx * dx + dy * dy <= width * width) {
-                    context.fill(x + i, y + j, x + i + 1, y + j + 1, color);
+                    if (spanStart < 0) spanStart = i;
+                    spanEnd = i + 1;
                 }
+            }
+            if (spanStart >= 0) {
+                context.fill(x + spanStart, y + j, x + spanEnd, y + j + 1, color);
             }
         }
     }

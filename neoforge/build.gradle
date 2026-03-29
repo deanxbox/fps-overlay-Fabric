@@ -34,7 +34,8 @@ dependencies {
     mappings loom.officialMojangMappings()
     neoForge "net.neoforged:neoforge:${project.neoforge_version}"
     modCompileOnly "dev.architectury:architectury-neoforge:${project.architectury_api_version}"
-    modImplementation "me.shedaniel.cloth:cloth-config-neoforge:${project.cloth_config_version}"
+    // YACL (NeoForge)
+    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}-neoforge"
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowCommon(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive false }
 }
@@ -101,7 +102,7 @@ modrinth {
     gameVersions = [project.minecraft_version]
     loaders = ["neoforge"]
     dependencies {
-        required.project "cloth-config"
+        required.project "yacl"
     }
 }
 
@@ -119,7 +120,7 @@ if (hasCurseforgeToken && curseforgeId) {
             changelogType = "markdown"
             mainArtifact(remapJar)
             relations {
-                requiredDependency 'cloth-config'
+                requiredDependency 'yacl'
             }
         }
     }
