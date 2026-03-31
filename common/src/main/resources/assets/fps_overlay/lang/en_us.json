@@ -59,9 +59,15 @@
   "tooltip.fps_overlay.adaptiveColors": "Change colors based on performance (e.g., Red when FPS is low)",
   "tooltip.fps_overlay.autoHideF3": "Automatically hide HUD when F3 menu is open",
   "tooltip.fps_overlay.showBackground": "Show semi-transparent background",
-  "tooltip.fps_overlay.backgroundOpacity": "Background transparency",
+  "tooltip.fps_overlay.backgroundOpacity": "Adjust how transparent the background panel is (0 = invisible, 255 = fully opaque)",
   "tooltip.fps_overlay.position": "Where to place the overlay on the screen",
   "tooltip.fps_overlay.showPing": "Show network latency",
+  "tooltip.fps_overlay.hud_scale": "Adjust the overall size of the overlay",
+  "tooltip.fps_overlay.xOffset": "Fine-tune horizontal position in pixels",
+  "tooltip.fps_overlay.yOffset": "Fine-tune vertical position in pixels",
+  "tooltip.fps_overlay.overlay_style": "Choose between vertical (stacked list) or horizontal (navbar) layout",
+  "tooltip.fps_overlay.textEffect": "Apply a shadow or outline effect to the overlay text for better readability",
+  "tooltip.fps_overlay.themePreset": "Apply a pre-built color scheme, or pick Custom to use your own colors",
   "enum.fps_overlay.update.16": "Fastest (16ms)",
   "enum.fps_overlay.update.33": "Fast (33ms)",
   "enum.fps_overlay.update.50": "Normal (50ms)",
@@ -151,6 +157,5 @@
   "key.fps_overlay.toggle_graph": "Toggle FPS Graph",
   "key.fps_overlay.toggle_memory": "Toggle Memory",
   "key.fps_overlay.toggle_overlay": "Toggle Overlay",
-  "key.fps_overlay.toggle_ping": "Toggle Ping",
-  "text.fps_overlay.gb": "GB"
+  "key.fps_overlay.toggle_ping": "Toggle Ping"
 }

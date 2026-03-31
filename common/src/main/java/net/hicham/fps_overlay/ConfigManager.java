@@ -6,8 +6,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConfigManager {
@@ -22,7 +22,7 @@ public class ConfigManager {
         void onConfigChanged();
     }
 
-    private static final List<ConfigChangedCallback> LISTENERS = new ArrayList<>();
+    private static final List<ConfigChangedCallback> LISTENERS = new CopyOnWriteArrayList<>();
 
     public static void initialize() {
         if (INITIALIZED.get()) {

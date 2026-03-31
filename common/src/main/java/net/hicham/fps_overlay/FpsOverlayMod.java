@@ -133,7 +133,7 @@ public class FpsOverlayMod {
         PerformanceTracker.getInstance().setConfig(config);
         OverlayRenderer.setConfig(config);
 
-        if (!config.hud.showAverageFps) {
+        if (!config.hud.isMetricEnabled(OverlayMetric.AVG_FPS)) {
             PerformanceTracker.getInstance().clearAverageFpsData();
         }
     }

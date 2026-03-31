@@ -49,6 +49,7 @@ public class PerformanceTracker {
     private int frameBufferSize = 0;
 
     private final int[] fpsGraphBuffer = new int[GRAPH_SAMPLE_CAPACITY];
+    private final int[] graphCopyBuffer = new int[GRAPH_SAMPLE_CAPACITY];
     private int graphIndex = 0;
     private int graphSize = 0;
 
@@ -149,11 +150,17 @@ public class PerformanceTracker {
     }
 
     public int[] copyGraphValues() {
-        int[] values = new int[graphSize];
-        for (int i = 0; i < graphSize; i++) {
-            int sourceIndex = (graphIndex - graphSize + i + fpsGraphBuffer.length) % fpsGraphBuffer.length;
-            values[i] = fpsGraphBuffer[sourceIndex];
+        int size = graphSize;
+        for (int i = 0; i < size; i++) {
+            int sourceIndex = (graphIndex - size + i + fpsGraphBuffer.length) % fpsGraphBuffer.length;
+            graphCopyBuffer[i] = fpsGraphBuffer[sourceIndex];
         }
+        // Return a correctly-sized view
+        if (size == graphCopyBuffer.length) {
+            return graphCopyBuffer;
+        }
+        int[] values = new int[size];
+        System.arraycopy(graphCopyBuffer, 0, values, 0, size);
         return values;
     }
 
@@ -335,13 +342,21 @@ public class PerformanceTracker {
         }
 
         long[] sortedTimes = new long[frameBufferSize];
-        System.arraycopy(frameTimeBuffer, 0, sortedTimes, 0, frameBufferSize);
+        if (frameBufferSize < frameTimeBuffer.length) {
+            // Buffer hasn't wrapped yet — valid data starts at index 0
+            System.arraycopy(frameTimeBuffer, 0, sortedTimes, 0, frameBufferSize);
+        } else {
+            // Buffer has wrapped — frameBufferIndex points to the oldest entry
+            int tailLen = frameTimeBuffer.length - frameBufferIndex;
+            System.arraycopy(frameTimeBuffer, frameBufferIndex, sortedTimes, 0, tailLen);
+            System.arraycopy(frameTimeBuffer, 0, sortedTimes, tailLen, frameBufferIndex);
+        }
         Arrays.sort(sortedTimes);
 
         int index = Math.max(0, frameBufferSize - 1 - (frameBufferSize / 100));
         long onePercentFrameNanos = sortedTimes[index];
 
-        if (onePercentFrameNanos == 0) {
+        if (onePercentFrameNanos <= 0) {
             return 0;
         }
         return (int) (1_000_000_000.0 / onePercentFrameNanos);
@@ -405,14 +420,6 @@ public class PerformanceTracker {
         return new LocationData(coordinates, biome);
     }
 
-    private int invokeInt(Object target, String... methodNames) throws ReflectiveOperationException {
-        Object value = invokeObject(target, methodNames);
-        if (value instanceof Number number) {
-            return number.intValue();
-        }
-        throw new NoSuchMethodException(String.join(", ", methodNames));
-    }
-
     private double invokeDouble(Object target, String... methodNames) throws ReflectiveOperationException {
         Object value = invokeObject(target, methodNames);
         if (value instanceof Number number) {
@@ -430,12 +437,6 @@ public class PerformanceTracker {
             }
         }
         throw new NoSuchMethodException(String.join(", ", methodNames));
-    }
-
-    private Object invokeObjectWithStringArg(Object target, String methodName, String arg)
-            throws ReflectiveOperationException {
-        Method method = target.getClass().getMethod(methodName, String.class);
-        return method.invoke(target, arg);
     }
 
     private record MemoryData(long used, long max) {

@@ -3,6 +3,8 @@ package net.hicham.fps_overlay;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.network.chat.Component;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileReader;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ModConfig {
+    private static final Logger LOGGER = LogManager.getLogger("fps_overlay/ModConfig");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public enum OverlayPosition {
@@ -268,7 +271,7 @@ public class ModConfig {
                     loadedConfig = new ModConfig();
                 }
             } catch (Exception e) {
-                System.err.println("Failed to load FPS Overlay config, reverting to defaults.");
+                LOGGER.error("Failed to load FPS Overlay config, reverting to defaults.", e);
                 loadedConfig = new ModConfig();
             }
         } else {
@@ -286,7 +289,7 @@ public class ModConfig {
             try (FileWriter writer = new FileWriter(file)) {
                 GSON.toJson(config, writer);
             } catch (IOException e) {
-                System.err.println("Failed to save FPS Overlay config!");
+                LOGGER.error("Failed to save FPS Overlay config!", e);
             }
         }
     }
