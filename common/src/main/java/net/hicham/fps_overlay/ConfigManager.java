@@ -51,6 +51,7 @@ public class ConfigManager {
         ensureInitialized();
         if (config == null) {
             config = new ModConfig();
+            config.validate();
         }
         return config;
     }

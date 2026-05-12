@@ -5,6 +5,7 @@ build/
 # Gradle
 .gradle/
 !gradle/wrapper/
+.gradle-user-home/
 
 # IDE
 .idea/

@@ -1,7 +1,9 @@
 package net.hicham.fps_overlay;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,7 +16,6 @@ public class FpsOverlayMod {
 
     private static final AtomicBoolean MOD_INITIALIZED = new AtomicBoolean(false);
     private static final Object INIT_LOCK = new Object();
-
     private static ModConfig config;
 
     public static void init() {
@@ -28,12 +29,9 @@ public class FpsOverlayMod {
 
             try {
                 ConfigManager.initialize();
-                config = ConfigManager.getConfig();
+                updateActiveConfig(ConfigManager.getConfig());
 
-                PerformanceTracker.getInstance().setConfig(config);
-                OverlayRenderer.setConfig(config);
                 ConfigManager.registerConfigListener(FpsOverlayMod::onConfigChanged);
-
                 MOD_INITIALIZED.set(true);
                 LOGGER.info("Fps Overlay initialized successfully");
             } catch (Exception e) {
@@ -45,18 +43,47 @@ public class FpsOverlayMod {
 
     public static boolean shouldRenderOverlay() {
         Minecraft client = Minecraft.getInstance();
-        return MOD_INITIALIZED.get()
-                && config != null
-                && config.general.enabled
-                && client != null
-                && client.player != null
-                && client.level != null
-                && client.font != null
-                && !client.options.hideGui;
+        if (!MOD_INITIALIZED.get()
+                || config == null
+                || !config.general.enabled
+                || client == null
+                || client.player == null
+                || client.level == null
+                || client.font == null
+                || client.options.hideGui) {
+            return false;
+        }
+
+        ModConfig.AutoHideRules rules = config.autoHide;
+        if (client.screen instanceof ConfigHubScreen
+                || client.screen instanceof PositionEditorScreen
+                || client.screen instanceof MetricOrderScreen
+                || (client.screen != null
+                && client.screen.getClass().getName().startsWith("dev.isxander.yacl3"))) {
+            return false;
+        }
+        if (rules != null) {
+            if (rules.hideWithF3 && client.getDebugOverlay().showDebugScreen()) {
+                return false;
+            }
+            if (rules.hideInChat && client.screen instanceof ChatScreen) {
+                return false;
+            }
+            if (rules.hideInInventory && client.screen instanceof AbstractContainerScreen<?>) {
+                return false;
+            }
+            if (rules.hideInScreenshots && client.options.keyScreenshot.isDown()) {
+                return false;
+            }
+        } else if (config.appearance.autoHideF3 && client.getDebugOverlay().showDebugScreen()) {
+            return false;
+        }
+
+        return true;
     }
 
     public static void onClientTick(Minecraft client) {
-        if (!MOD_INITIALIZED.get() || client.player == null) {
+        if (!MOD_INITIALIZED.get() || client == null || client.player == null) {
             return;
         }
 
@@ -67,13 +94,26 @@ public class FpsOverlayMod {
         return config;
     }
 
+    public static ModConfig getConfigForEditing() {
+        if (config == null) {
+            updateActiveConfig(ConfigManager.getConfig());
+        }
+        return config;
+    }
+
+    public static float getOverlayFadeAlpha() {
+        return config != null && config.autoHide != null
+                ? PerformanceTracker.getInstance().getFadeAlpha(config.autoHide)
+                : 1.0f;
+    }
+
     public static void toggleOverlay() {
         if (config == null) {
             return;
         }
 
         config.general.enabled = !config.general.enabled;
-        ConfigManager.saveConfig();
+        saveConfigForCurrentContext(config);
         sendInfoMessage("Overlay " + enabledText(config.general.enabled));
     }
 
@@ -84,7 +124,7 @@ public class FpsOverlayMod {
 
         boolean enabled = !config.hud.isMetricEnabled(metric);
         config.hud.setMetricEnabled(metric, enabled);
-        ConfigManager.saveConfig();
+        saveConfigForCurrentContext(config);
         sendInfoMessage(Component.translatable(metric.getLabelKey()).getString() + " " + enabledText(enabled));
     }
 
@@ -94,7 +134,7 @@ public class FpsOverlayMod {
         }
 
         config.hud.showGraph = !config.hud.showGraph;
-        ConfigManager.saveConfig();
+        saveConfigForCurrentContext(config);
         sendInfoMessage("Graph " + enabledText(config.hud.showGraph));
     }
 
@@ -116,7 +156,7 @@ public class FpsOverlayMod {
             return;
         }
 
-        client.setScreen(new PositionEditorScreen(client.screen, ConfigManager.getConfig()));
+        client.setScreen(new PositionEditorScreen(client.screen, getConfigForEditing()));
     }
 
     public static void resetStatistics() {
@@ -124,18 +164,31 @@ public class FpsOverlayMod {
         sendInfoMessage("Session statistics reset");
     }
 
+    public static void saveConfigForCurrentContext(ModConfig editedConfig) {
+        if (editedConfig == null) {
+            return;
+        }
+
+        updateActiveConfig(editedConfig);
+        ConfigManager.saveConfig();
+    }
+
     private static void onConfigChanged() {
         if (!MOD_INITIALIZED.get()) {
             return;
         }
 
-        config = ConfigManager.getConfig();
-        PerformanceTracker.getInstance().setConfig(config);
-        OverlayRenderer.setConfig(config);
+        updateActiveConfig(ConfigManager.getConfig());
 
-        if (!config.hud.isMetricEnabled(OverlayMetric.AVG_FPS)) {
+        if (config != null && !config.hud.isMetricEnabled(OverlayMetric.AVG_FPS)) {
             PerformanceTracker.getInstance().clearAverageFpsData();
         }
+    }
+
+    private static void updateActiveConfig(ModConfig newConfig) {
+        config = newConfig;
+        PerformanceTracker.getInstance().setConfig(config);
+        OverlayRenderer.setConfig(config);
     }
 
     private static void sendInfoMessage(String message) {
