@@ -1,6 +1,6 @@
 package net.hicham.fps_overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
@@ -156,22 +156,22 @@ public class PositionEditorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fillGradient(0, 0, this.width, this.height, 0xC0182028, 0xD010141A);
         OverlayRenderer.renderPreview(guiGraphics, minecraft, config, this.width, this.height);
         renderColorPanel(guiGraphics);
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
 
-        guiGraphics.drawCenteredString(font, title, this.width / 2, 48, 0xFFFFFFFF);
-        guiGraphics.drawCenteredString(font, Component.translatable("text.fps_overlay.position_editor_hint"),
+        guiGraphics.centeredText(font, title, this.width / 2, 48, 0xFFFFFFFF);
+        guiGraphics.centeredText(font, Component.translatable("text.fps_overlay.position_editor_hint"),
                 this.width / 2, 62, 0xFFB7C6D1);
-        guiGraphics.drawString(font, Component.translatable("option.fps_overlay.hudScale"),
+        guiGraphics.text(font, Component.translatable("option.fps_overlay.hudScale"),
                 338, 26, 0xFFFFFFFF, false);
-        guiGraphics.drawString(font, (int) (config.appearance.hudScale * 100) + "%",
+        guiGraphics.text(font, (int) (config.appearance.hudScale * 100) + "%",
                 395, 26, 0xFF7FB9D7, false);
     }
 
-    private void renderColorPanel(GuiGraphics guiGraphics) {
+    private void renderColorPanel(GuiGraphicsExtractor guiGraphics) {
         int x = this.width - COLOR_PANEL_WIDTH - 20;
         int y = 16;
         int border = 0xFF334A5C;
@@ -188,9 +188,9 @@ public class PositionEditorScreen extends Screen {
         guiGraphics.fill(x, y, x + 1, y + COLOR_PANEL_HEIGHT, border);
         guiGraphics.fill(x + COLOR_PANEL_WIDTH - 1, y, x + COLOR_PANEL_WIDTH, y + COLOR_PANEL_HEIGHT, border);
 
-        guiGraphics.drawString(font, Component.translatable("text.fps_overlay.color_editor").getString(),
+        guiGraphics.text(font, Component.translatable("text.fps_overlay.color_editor").getString(),
                 x + 10, y + 6, 0xFFE8EEF2, false);
-        guiGraphics.drawString(font, Component.translatable("text.fps_overlay.color_editor_hint").getString(),
+        guiGraphics.text(font, Component.translatable("text.fps_overlay.color_editor_hint").getString(),
                 x + 10, y + 20, 0xFF8FB0C2, false);
 
         guiGraphics.fill(swatchX, swatchY + 22, swatchX + swatchWidth, swatchY + 22 + swatchHeight, swatchColor);
@@ -199,7 +199,7 @@ public class PositionEditorScreen extends Screen {
         guiGraphics.fill(swatchX, swatchY + 22, swatchX + 1, swatchY + 22 + swatchHeight, 0xFF000000);
         guiGraphics.fill(swatchX + swatchWidth - 1, swatchY + 22, swatchX + swatchWidth, swatchY + 22 + swatchHeight, 0xFF000000);
 
-        guiGraphics.drawString(font, String.format("#%08X", swatchColor),
+        guiGraphics.text(font, String.format("#%08X", swatchColor),
                 x + 10, y + 56, 0xFFB7C6D1, false);
     }
 

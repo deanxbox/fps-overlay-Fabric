@@ -2,7 +2,7 @@ package net.hicham.fps_overlay;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import org.joml.Matrix3x2fStack;
 
@@ -44,7 +44,7 @@ public class OverlayRenderer {
         invalidateLiveCaches();
     }
 
-    public static void render(GuiGraphics context, Minecraft client) {
+    public static void render(GuiGraphicsExtractor context, Minecraft client) {
         if (config == null || !config.general.enabled) {
             return;
         }
@@ -61,7 +61,7 @@ public class OverlayRenderer {
         applyScale(context, scale, () -> renderScaled(context, client, config, lines, false, dataVersion));
     }
 
-    public static void renderPreview(GuiGraphics context, Minecraft client, ModConfig previewConfig, int screenWidth,
+    public static void renderPreview(GuiGraphicsExtractor context, Minecraft client, ModConfig previewConfig, int screenWidth,
             int screenHeight) {
         if (previewConfig == null) {
             return;
@@ -114,7 +114,7 @@ public class OverlayRenderer {
         return measureLayout(font, previewConfig, lines, logicalWidth, logicalHeight, true).bounds();
     }
 
-    private static void renderScaled(GuiGraphics context, Minecraft client, ModConfig activeConfig,
+    private static void renderScaled(GuiGraphicsExtractor context, Minecraft client, ModConfig activeConfig,
             List<OverlayLine> lines, boolean preview, long dataVersion) {
         Minecraft resolvedClient = client != null ? client : Minecraft.getInstance();
         Font font = resolvedClient != null ? resolvedClient.font : null;
@@ -158,7 +158,7 @@ public class OverlayRenderer {
         }
     }
 
-    private static void renderNavbar(GuiGraphics context, Font font, ModConfig activeConfig, List<NavbarRow> rows,
+    private static void renderNavbar(GuiGraphicsExtractor context, Font font, ModConfig activeConfig, List<NavbarRow> rows,
             LayoutBounds bounds, float fadeAlpha) {
         int lineHeight = font.lineHeight + 2;
         for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
@@ -194,7 +194,7 @@ public class OverlayRenderer {
         }
     }
 
-    private static void renderVertical(GuiGraphics context, Font font, ModConfig activeConfig, List<OverlayLine> lines,
+    private static void renderVertical(GuiGraphicsExtractor context, Font font, ModConfig activeConfig, List<OverlayLine> lines,
             LayoutBounds bounds, float fadeAlpha) {
         int lineHeight = font.lineHeight + 2;
         int y = bounds.y() + PANEL_PADDING;
@@ -221,7 +221,7 @@ public class OverlayRenderer {
         }
     }
 
-    private static void renderGraph(GuiGraphics context, Font font, ModConfig activeConfig, LayoutBounds bounds,
+    private static void renderGraph(GuiGraphicsExtractor context, Font font, ModConfig activeConfig, LayoutBounds bounds,
             int graphTop, int[] values, boolean fpsGraph, float fadeAlpha) {
         if (values.length == 0) {
             return;
@@ -265,7 +265,7 @@ public class OverlayRenderer {
         }
     }
 
-    private static void drawMemoryBar(GuiGraphics context, ModConfig activeConfig, OverlayLine line,
+    private static void drawMemoryBar(GuiGraphicsExtractor context, ModConfig activeConfig, OverlayLine line,
             int x, int y, float fadeAlpha) {
         double percentage = line.adaptiveValue() == null ? 0.0 : Math.max(0.0, Math.min(100.0, line.adaptiveValue()));
         int border = applyAlpha(getDividerColor(activeConfig), fadeAlpha);
@@ -624,23 +624,23 @@ public class OverlayRenderer {
         return String.format(Locale.ROOT, translated(key), args);
     }
 
-    private static void drawStyledText(GuiGraphics context, Font font, ModConfig activeConfig, String text,
+    private static void drawStyledText(GuiGraphicsExtractor context, Font font, ModConfig activeConfig, String text,
             int x, int y, int color) {
         if (text == null || text.isEmpty()) {
             return;
         }
         ModConfig.TextEffect effect = activeConfig != null ? activeConfig.appearance.textEffect : ModConfig.TextEffect.NONE;
         switch (effect) {
-            case SHADOW -> context.drawString(font, text, x, y, color, true);
+            case SHADOW -> context.text(font, text, x, y, color, true);
             case OUTLINE -> {
                 int outlineColor = applyAlpha(0xD0000000, ((color >>> 24) & 0xFF) / 255.0f);
-                context.drawString(font, text, x - 1, y, outlineColor, false);
-                context.drawString(font, text, x + 1, y, outlineColor, false);
-                context.drawString(font, text, x, y - 1, outlineColor, false);
-                context.drawString(font, text, x, y + 1, outlineColor, false);
-                context.drawString(font, text, x, y, color, false);
+                context.text(font, text, x - 1, y, outlineColor, false);
+                context.text(font, text, x + 1, y, outlineColor, false);
+                context.text(font, text, x, y - 1, outlineColor, false);
+                context.text(font, text, x, y + 1, outlineColor, false);
+                context.text(font, text, x, y, color, false);
             }
-            case NONE -> context.drawString(font, text, x, y, color, false);
+            case NONE -> context.text(font, text, x, y, color, false);
         }
     }
 
@@ -713,7 +713,7 @@ public class OverlayRenderer {
         return new int[] {44, 42, 40, 43, 45, 41, 46, 49, 43, 42, 44, 47, 39, 40, 42, 45};
     }
 
-    private static void applyScale(GuiGraphics context, float scale, Runnable renderer) {
+    private static void applyScale(GuiGraphicsExtractor context, float scale, Runnable renderer) {
         Matrix3x2fStack matrices = context.pose();
         matrices.pushMatrix();
         matrices.scale(scale, scale);
@@ -721,7 +721,7 @@ public class OverlayRenderer {
         matrices.popMatrix();
     }
 
-    private static void drawRoundedRect(GuiGraphics context, int x, int y, int width, int height, int radius, int color) {
+    private static void drawRoundedRect(GuiGraphicsExtractor context, int x, int y, int width, int height, int radius, int color) {
         int clampedRadius = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
         if (clampedRadius <= 1) {
             context.fill(x, y, x + width, y + height, color);

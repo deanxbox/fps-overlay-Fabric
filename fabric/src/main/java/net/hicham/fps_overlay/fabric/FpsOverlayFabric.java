@@ -2,8 +2,9 @@ package net.hicham.fps_overlay.fabric;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.hicham.fps_overlay.FpsOverlayMod;
 import net.hicham.fps_overlay.OverlayMetric;
 import net.hicham.fps_overlay.OverlayRenderer;
@@ -34,7 +35,8 @@ public class FpsOverlayFabric implements ClientModInitializer {
             }
         });
 
-        HudRenderCallback.EVENT.register((guiGraphics, tickDelta) -> {
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+                Identifier.fromNamespaceAndPath(FpsOverlayMod.MOD_ID, "overlay"), (guiGraphics, tickDelta) -> {
             if (!FpsOverlayMod.shouldRenderOverlay()) {
                 return;
             }
@@ -68,7 +70,7 @@ public class FpsOverlayFabric implements ClientModInitializer {
     }
 
     private void registerKeyBinding(String id, int defaultKey, Runnable action) {
-        KeyMapping binding = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        KeyMapping binding = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.fps_overlay." + id,
                 InputConstants.Type.KEYSYM,
                 defaultKey,

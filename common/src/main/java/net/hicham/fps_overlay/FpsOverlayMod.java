@@ -194,7 +194,7 @@ public class FpsOverlayMod {
     private static void sendInfoMessage(String message) {
         Minecraft client = Minecraft.getInstance();
         if (client != null && client.player != null) {
-            client.player.displayClientMessage(Component.literal("[FpsOverlay] " + message), true);
+            client.player.sendOverlayMessage(Component.literal("[FpsOverlay] " + message));
         }
     }
 

@@ -1,6 +1,6 @@
 package net.hicham.fps_overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -72,10 +72,10 @@ public class ProfileSelectScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fillGradient(0, 0, this.width, this.height, 0xD0121820, 0xE0091016);
-        guiGraphics.drawCenteredString(font, title, this.width / 2, 16, 0xFFFFFFFF);
-        guiGraphics.drawCenteredString(font, Component.translatable("text.fps_overlay.profile_select_hint"),
+        guiGraphics.centeredText(font, title, this.width / 2, 16, 0xFFFFFFFF);
+        guiGraphics.centeredText(font, Component.translatable("text.fps_overlay.profile_select_hint"),
                 this.width / 2, 29, TEXT_MUTED);
 
         int left = getListLeft();
@@ -85,7 +85,7 @@ public class ProfileSelectScreen extends Screen {
         guiGraphics.fill(left - 2, top, right + 2, bottom, 0xA9141B22);
         drawBorder(guiGraphics, left - 2, top, right + 2, bottom, 0xFF334A5C);
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private void refreshOptions() {
@@ -163,7 +163,7 @@ public class ProfileSelectScreen extends Screen {
         scrollAmount = Math.max(0, Math.min(scrollAmount, maxScroll));
     }
 
-    private void drawBorder(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int color) {
+    private void drawBorder(GuiGraphicsExtractor guiGraphics, int x1, int y1, int x2, int y2, int color) {
         guiGraphics.fill(x1, y1, x2, y1 + 1, color);
         guiGraphics.fill(x1, y2 - 1, x2, y2, color);
         guiGraphics.fill(x1, y1, x1 + 1, y2, color);

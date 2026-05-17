@@ -1,6 +1,6 @@
 package net.hicham.fps_overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -62,15 +62,15 @@ public class ConfigHubScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fillGradient(0, 0, this.width, this.height, 0xD0121820, 0xE0091016);
 
         HubLayout layout = computeLayout();
         int centerX = this.width / 2;
         int contentX = layout.contentX();
 
-        guiGraphics.drawCenteredString(font, title, centerX, TOP_CONTENT_Y, 0xFFFFFFFF);
-        guiGraphics.drawCenteredString(font, Component.translatable("text.fps_overlay.config_hub_hint"),
+        guiGraphics.centeredText(font, title, centerX, TOP_CONTENT_Y, 0xFFFFFFFF);
+        guiGraphics.centeredText(font, Component.translatable("text.fps_overlay.config_hub_hint"),
                 centerX, TOP_SUBTITLE_Y, 0xFFB7C6D1);
 
         drawPanel(guiGraphics, layout.panelX(), layout.panelY(), PANEL_WIDTH, layout.panelHeight());
@@ -78,10 +78,10 @@ public class ConfigHubScreen extends Screen {
         drawSection(guiGraphics, contentX, layout.toolsSectionY(),
                 "text.fps_overlay.tools_hint", "text.fps_overlay.tools_subtitle");
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
-    private void drawPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+    private void drawPanel(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height) {
         int background = 0xC919232D;
         int border = 0xFF334A5C;
         guiGraphics.fill(x, y, x + width, y + height, background);
@@ -91,9 +91,9 @@ public class ConfigHubScreen extends Screen {
         guiGraphics.fill(x + width - 1, y, x + width, y + height, border);
     }
 
-    private void drawSection(GuiGraphics guiGraphics, int x, int y, String titleKey, String subtitleKey) {
-        guiGraphics.drawString(font, Component.translatable(titleKey).getString(), x, y, 0xFFE8EEF2, false);
-        guiGraphics.drawString(font, Component.translatable(subtitleKey).getString(), x, y + 11, 0xFF8FB0C2, false);
+    private void drawSection(GuiGraphicsExtractor guiGraphics, int x, int y, String titleKey, String subtitleKey) {
+        guiGraphics.text(font, Component.translatable(titleKey).getString(), x, y, 0xFFE8EEF2, false);
+        guiGraphics.text(font, Component.translatable(subtitleKey).getString(), x, y + 11, 0xFF8FB0C2, false);
     }
 
     private HubLayout computeLayout() {

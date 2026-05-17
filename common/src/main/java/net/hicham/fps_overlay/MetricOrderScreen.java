@@ -1,6 +1,6 @@
 package net.hicham.fps_overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -167,7 +167,7 @@ public class MetricOrderScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fill(0, 0, this.width, this.height, COL_BG_SCREEN);
 
         int listLeft = getListLeft();
@@ -203,18 +203,18 @@ public class MetricOrderScreen extends Screen {
 
             int badgeX = listLeft + 4;
             guiGraphics.fill(badgeX, rowY + 6, badgeX + 14, rowY + 18, COL_BORDER);
-            guiGraphics.drawCenteredString(font, String.valueOf(i + 1), badgeX + 7, rowY + 8, TEXT_MUTED);
+            guiGraphics.centeredText(font, String.valueOf(i + 1), badgeX + 7, rowY + 8, TEXT_MUTED);
 
             int nameX = listLeft + ORDER_WIDTH + TOGGLE_WIDTH + 6;
             int nameRight = compactLayout
                     ? listLeft + listWidth - HANDLE_WIDTH - 8
                     : listLeft + listWidth - HANDLE_WIDTH - UPDATE_WIDTH - RESET_WIDTH - editWidth - 18;
             String visibleName = font.plainSubstrByWidth(defaultName, Math.max(24, nameRight - nameX));
-            guiGraphics.drawString(font, visibleName, nameX, rowY + 4, TEXT_PRIMARY, true);
+            guiGraphics.text(font, visibleName, nameX, rowY + 4, TEXT_PRIMARY, true);
 
             if (!compactLayout && !customName.isBlank()) {
                 String preview = Component.translatable("text.fps_overlay.metric_rename_preview", customName).getString();
-                guiGraphics.drawString(font, font.plainSubstrByWidth(preview, Math.max(24, nameRight - nameX)),
+                guiGraphics.text(font, font.plainSubstrByWidth(preview, Math.max(24, nameRight - nameX)),
                         nameX, rowY + 14, TEXT_MUTED, false);
             }
 
@@ -222,7 +222,7 @@ public class MetricOrderScreen extends Screen {
                     isDragging ? TEXT_ACCENT : TEXT_MUTED);
 
             if (isDragging) {
-                guiGraphics.drawCenteredString(font,
+                guiGraphics.centeredText(font,
                         Component.translatable("text.fps_overlay.dragging"),
                         listLeft + listWidth - HANDLE_WIDTH / 2,
                         rowY + 3, TEXT_ACCENT);
@@ -257,7 +257,7 @@ public class MetricOrderScreen extends Screen {
         }
 
         guiGraphics.enableScissor(0, viewportTop, this.width, viewportBottom);
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.disableScissor();
 
         guiGraphics.fill(0, 0, this.width, LIST_TOP - 14, COL_BG_SCREEN);
@@ -265,36 +265,36 @@ public class MetricOrderScreen extends Screen {
         guiGraphics.fillGradient(0, viewportBottom, this.width, viewportBottom + 7, 0x0010141A, COL_BG_SCREEN);
         guiGraphics.fill(0, viewportBottom + 7, this.width, this.height, COL_BG_SCREEN);
 
-        guiGraphics.drawCenteredString(font, title, this.width / 2, 16, TEXT_PRIMARY);
-        guiGraphics.drawCenteredString(font,
+        guiGraphics.centeredText(font, title, this.width / 2, 16, TEXT_PRIMARY);
+        guiGraphics.centeredText(font,
                 Component.translatable("text.fps_overlay.metric_order_hint"),
                 this.width / 2, 28, TEXT_HEADER);
 
-        guiGraphics.drawString(font, "#", listLeft + 4, headerY, TEXT_MUTED, false);
-        guiGraphics.drawString(font,
+        guiGraphics.text(font, "#", listLeft + 4, headerY, TEXT_MUTED, false);
+        guiGraphics.text(font,
                 Component.translatable("text.fps_overlay.metric_column_visibility").getString(),
                 listLeft + ORDER_WIDTH + 10, headerY, TEXT_MUTED, false);
-        guiGraphics.drawString(font,
+        guiGraphics.text(font,
                 Component.translatable("text.fps_overlay.metric_column_name").getString(),
                 listLeft + ORDER_WIDTH + TOGGLE_WIDTH + 12, headerY, TEXT_MUTED, false);
         if (!compactLayout) {
-            guiGraphics.drawString(font,
+            guiGraphics.text(font,
                     Component.translatable("text.fps_overlay.metric_column_custom").getString(),
                     listLeft + listWidth - HANDLE_WIDTH - UPDATE_WIDTH - RESET_WIDTH - editWidth - 12, headerY, TEXT_MUTED, false);
-            guiGraphics.drawString(font,
+            guiGraphics.text(font,
                     Component.translatable("text.fps_overlay.metric_column_refresh").getString(),
                     listLeft + listWidth - HANDLE_WIDTH - UPDATE_WIDTH - 4, headerY, TEXT_MUTED, false);
         }
-        guiGraphics.drawString(font,
+        guiGraphics.text(font,
                 Component.translatable("text.fps_overlay.metric_column_drag").getString(),
                 listLeft + listWidth - HANDLE_WIDTH + 6, headerY, TEXT_MUTED, false);
 
-        guiGraphics.drawCenteredString(font,
+        guiGraphics.centeredText(font,
                 Component.translatable("text.fps_overlay.metric_order_footer"),
                 this.width / 2, this.height - 40, TEXT_MUTED);
 
-        resetAllButton.render(guiGraphics, mouseX, mouseY, partialTick);
-        doneButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        resetAllButton.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
+        doneButton.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
 
         if (toastTicks > 0) {
             float alpha = Math.min(1.0f, toastTicks / 8.0f);
@@ -309,7 +309,7 @@ public class MetricOrderScreen extends Screen {
                     toastAlpha | (COL_BG_DRAG & 0x00FFFFFF));
             drawBorder(guiGraphics, toastX, toastY, toastX + toastWidth, toastY + 14,
                     toastAlpha | (TEXT_ACCENT & 0x00FFFFFF));
-            guiGraphics.drawCenteredString(font, message, this.width / 2, toastY + 3,
+            guiGraphics.centeredText(font, message, this.width / 2, toastY + 3,
                     toastAlpha | (TEXT_ACCENT & 0x00FFFFFF));
         }
     }
@@ -429,14 +429,14 @@ public class MetricOrderScreen extends Screen {
         showToast("screen.fps_overlay.toast_reset");
     }
 
-    private void drawBorder(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int color) {
+    private void drawBorder(GuiGraphicsExtractor guiGraphics, int x1, int y1, int x2, int y2, int color) {
         guiGraphics.fill(x1, y1, x2, y1 + 1, color);
         guiGraphics.fill(x1, y2 - 1, x2, y2, color);
         guiGraphics.fill(x1, y1, x1 + 1, y2, color);
         guiGraphics.fill(x2 - 1, y1, x2, y2, color);
     }
 
-    private void drawGripIndicator(GuiGraphics guiGraphics, int centerX, int topY, int color) {
+    private void drawGripIndicator(GuiGraphicsExtractor guiGraphics, int centerX, int topY, int color) {
         int startX = centerX - 5;
         for (int row = 0; row < 3; row++) {
             int y = topY + (row * 5);

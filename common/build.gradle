@@ -1,23 +1,11 @@
 plugins {
-    id 'architectury-plugin'
-    id 'dev.architectury.loom'
-}
-
-architectury {
-    common("fabric", "neoforge")
-}
-
-loom {
-    silentMojangMappingsLicense()
+    id 'net.fabricmc.fabric-loom'
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
+    compileOnly "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
 
-    // Architectury API (common module)
-    modCompileOnly "dev.architectury:architectury:${project.architectury_api_version}"
-
-    // YACL classes for common module (compilation only, no transitive Fabric dependencies)
-    modCompileOnly("dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric") { transitive = false }
+    // YACL API is referenced by common config screen code; each platform supplies its runtime variant.
+    compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric"
 }

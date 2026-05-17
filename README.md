@@ -78,14 +78,14 @@ All keybinds can be rebound in the standard Minecraft controls menu or disabled 
 
 ## Building from Source
 
-This project uses Architectury to build for both Fabric and NeoForge simultaneously.
+This project builds Fabric with Fabric Loom and NeoForge with ModDevGradle, sharing common source through the `common` module.
 
 1. Clone the repository: `git clone https://github.com/hichamdev/fps-overlay-Fabric.git`
 2. Open a terminal in the project directory.
 3. Run `./gradlew build` (or `gradlew.bat build` on Windows).
 4. The compiled `.jar` files will be in `fabric/build/libs/` and `neoforge/build/libs/`.
 
-> **Note:** Java 21 is required to build this project.
+> **Note:** Java 25 is required to build this project.
 
 ## License
 

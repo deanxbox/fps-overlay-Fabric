@@ -782,7 +782,7 @@ public class PerformanceTracker {
             return new TimeData(realTime, "0", formatClock(6, 0, clockFormat));
         }
 
-        long dayTime = client.level.getDayTime();
+        long dayTime = client.level.getDefaultClockTime();
         long worldTicks = Math.floorMod(dayTime, 24000L);
         long worldDay = Math.floorDiv(dayTime, 24000L);
         int hours = (int) ((worldTicks / 1000L + 6L) % 24L);

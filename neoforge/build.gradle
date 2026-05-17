@@ -1,43 +1,34 @@
 plugins {
-    id 'architectury-plugin'
-    id 'dev.architectury.loom'
-    id 'com.gradleup.shadow' version "${shadow_version}"
+    id 'net.neoforged.moddev'
     id 'com.modrinth.minotaur'
-}
-
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-
-loom {
-    silentMojangMappingsLicense()
 }
 
 base {
     archivesName = "${project.archives_base_name}-neoforge"
 }
 
-configurations {
-    common {
-        canBeResolved = true
-        canBeConsumed = false
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+        }
     }
-    shadowCommon
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
-    modCompileOnly "dev.architectury:architectury-neoforge:${project.architectury_api_version}"
     // YACL (NeoForge)
-    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}-neoforge"
-    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
-    shadowCommon(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
+    implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}-neoforge"
+
+    // Common module
+    implementation project(':common')
 }
 
 processResources {
@@ -56,32 +47,15 @@ processResources {
     }
 }
 
-shadowJar {
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier = 'dev-shadow'
-}
-
-remapJar {
-    inputFile.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier = null
-}
-
 jar {
-    archiveClassifier = 'dev'
+    dependsOn project(':common').tasks.named('classes')
+    from(project(':common').sourceSets.main.output)
 }
 
 sourcesJar {
-    def commonSources = project(':common').sourcesJar
-    dependsOn commonSources
-    from commonSources.archiveFile.map { zipTree(it) }
+    dependsOn project(':common').tasks.named('sourcesJar')
+    from project(':common').sourceSets.main.allSource
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-components.java {
-    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
-        skip()
-    }
 }
 
 def changelogContent = rootProject.file("CHANGELOG.md").exists() ? rootProject.file("CHANGELOG.md").text : "No changelog provided."
@@ -97,7 +71,7 @@ modrinth {
     versionNumber = "${project.mod_version}+neoforge"
     versionName = "v5.1 (NeoForge)"
     versionType = "release"
-    uploadFile = remapJar
+    uploadFile = jar
     changelog = changelogContent
     gameVersions = [project.minecraft_version]
     loaders = ["neoforge"]
@@ -111,16 +85,16 @@ if (hasCurseforgeToken && curseforgeId) {
     tasks.register('publishCurseForge', net.darkhax.curseforgegradle.TaskPublishCurseForge) {
         apiToken = System.getenv("CURSEFORGE_TOKEN") ?: project.findProperty("curseforge_token") ?: ""
 
-        def mainFile = upload(curseforgeId, remapJar)
+        def mainFile = upload(curseforgeId, jar)
         mainFile.releaseType = 'release'
-        mainFile.addGameVersion(project.minecraft_version, "NeoForge", "Java 21")
+        mainFile.addGameVersion(project.minecraft_version, "NeoForge", "Java 25")
         mainFile.changelog = changelogContent
         mainFile.changelogType = 'markdown'
 
         mainFile.addRequirement('yacl')
 
-        dependsOn(remapJar)
+        dependsOn(jar)
     }
 }
 
-tasks.named("modrinth").configure { dependsOn(remapJar) }
+tasks.named("modrinth").configure { dependsOn(jar) }

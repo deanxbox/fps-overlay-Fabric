@@ -1,6 +1,6 @@
 package net.hicham.fps_overlay;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -55,7 +55,7 @@ public class ProfileNameScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.fillGradient(0, 0, this.width, this.height, 0xD0121820, 0xE0091016);
 
         int panelX = this.width / 2 - 140;
@@ -71,11 +71,11 @@ public class ProfileNameScreen extends Screen {
         guiGraphics.fill(panelX, panelY, panelX + 1, panelY + panelHeight, border);
         guiGraphics.fill(panelX + panelWidth - 1, panelY, panelX + panelWidth, panelY + panelHeight, border);
 
-        guiGraphics.drawCenteredString(font, title, this.width / 2, panelY + 10, 0xFFFFFFFF);
-        guiGraphics.drawCenteredString(font, Component.translatable("text.fps_overlay.profile_name_prompt"),
+        guiGraphics.centeredText(font, title, this.width / 2, panelY + 10, 0xFFFFFFFF);
+        guiGraphics.centeredText(font, Component.translatable("text.fps_overlay.profile_name_prompt"),
                 this.width / 2, panelY + 24, 0xFFB7C6D1);
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private void confirm() {
