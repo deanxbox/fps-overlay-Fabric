@@ -1,41 +1,62 @@
 plugins {
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
-    id 'dev.architectury.loom' version '1.13-SNAPSHOT' apply false
-    id 'com.modrinth.minotaur' version '2.+' apply false
-    id 'net.darkhax.curseforgegradle' version '1.0.14' apply false
+    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
+    id 'maven-publish'
 }
 
-architectury {
-    minecraft = project.minecraft_version
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = "${project.archives_base_name}-fabric"
 }
 
-allprojects {
-    group = project.maven_group
-    version = project.mod_version
-}
-
-subprojects {
-    apply plugin: 'java'
-
-    java {
-        withSourcesJar()
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
-        }
+java {
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
     }
+}
 
-    tasks.withType(JavaCompile).configureEach {
-        it.options.release = 21
-    }
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+}
 
-    repositories {
-        mavenCentral()
-        maven { url = "https://maven.isxander.dev/releases" }
-        maven { url = "https://maven.architectury.dev/" }
-        maven { url = "https://maven.fabricmc.net/" }
-        maven { url = "https://maven.minecraftforge.net/" }
-        maven { url = "https://maven.neoforged.net/releases/" }
-        maven { url = "https://maven.terraformersmc.com/" }
-        maven { url = "https://maven.shedaniel.me/" }
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = "https://maven.isxander.dev/releases" }
+    maven { url = "https://maven.terraformersmc.com/" }
+    maven { url = "https://api.modrinth.com/maven" }
+}
+
+dependencies {
+    // Minecraft dependency (Loom plugin configures this)
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+    // Fabric Loader & API (Standard Gradle dependencies for unobfuscated 26.1+)
+    implementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    // YACL (Fabric)
+    implementation "maven.modrinth:yacl:${project.yacl_version}"
+
+    // Mod Menu (Fabric)
+    implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+               "mod_id": project.mod_id,
+               "mod_name": project.mod_name,
+               "mod_description": project.mod_description,
+               "mod_author": project.mod_author,
+               "mod_license": project.mod_license,
+               "minecraft_version": project.minecraft_version,
+               "fabric_loader_version": project.fabric_loader_version,
+               "mod_homepage": project.mod_homepage,
+               "mod_sources": project.mod_sources
     }
 }
