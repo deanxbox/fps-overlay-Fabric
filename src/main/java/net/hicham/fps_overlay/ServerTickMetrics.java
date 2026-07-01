@@ -2,7 +2,6 @@ package net.hicham.fps_overlay;
 
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ServerboundDebugSubscriptionRequestPacket;
-import net.minecraft.util.debugchart.RemoteDebugSampleType;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 

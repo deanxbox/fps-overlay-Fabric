@@ -34,7 +34,6 @@ public class OverlayRenderer {
         }
 
         PerformanceTracker tracker = PerformanceTracker.getInstance();
-        tracker.recordFrame();
 
         if (config.appearance.autoHideF3 && client.getDebugOverlay().showDebugScreen()) {
             return;
@@ -107,8 +106,7 @@ public class OverlayRenderer {
 
     private static void renderScaled(GuiGraphicsExtractor context, Minecraft client, ModConfig activeConfig,
             List<OverlayLine> lines, boolean preview) {
-        Minecraft resolvedClient = client != null ? client : Minecraft.getInstance();
-        Font renderer = resolvedClient != null ? resolvedClient.font : null;
+        Font renderer = client != null ? client.font : null;
         if (renderer == null) {
             return;
         }
@@ -528,7 +526,6 @@ public class OverlayRenderer {
             int maxDx2 = r2 - dy * dy;
             if (maxDx2 < 0) continue;
             int maxDx = (int) Math.sqrt(maxDx2);
-            // The span of pixels inside the circle for this row
             int fillWidth = Math.min(maxDx + 1, width);
             int spanStart = left ? (width - fillWidth) : 0;
             int spanEnd = left ? width : fillWidth;

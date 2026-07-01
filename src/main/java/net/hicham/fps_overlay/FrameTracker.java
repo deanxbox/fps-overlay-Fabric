@@ -24,15 +24,13 @@ public class FrameTracker {
             currentFrameTimeMs = delta / 1_000_000.0;
 
             if (size >= MAX_FRAME_SAMPLES) {
-                // Buffer is full. Retrieve oldest, subtract from sum of deltas BEFORE overwriting,
-                // store the new delta, and update the head pointer.
+                // Subtract oldest BEFORE overwriting its slot
                 long oldest = frameTimeBuffer[head];
                 sumOfDeltasNanos -= oldest;
                 sumOfDeltasNanos += delta;
                 frameTimeBuffer[head] = delta;
                 head = (head + 1) % MAX_FRAME_SAMPLES;
             } else {
-                // Buffer has space. Append at current size index.
                 frameTimeBuffer[size] = delta;
                 sumOfDeltasNanos += delta;
                 size++;

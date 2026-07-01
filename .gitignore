@@ -28,3 +28,8 @@ Thumbs.db
 
 # Heap dumps
 *.hprof
+
+# Backport working folders - not part of main history
+backport-1.21.1/
+Backport-1.21.11/
+backport-26.1.2/

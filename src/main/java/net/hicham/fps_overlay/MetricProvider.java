@@ -20,12 +20,8 @@ public final class MetricProvider {
     }
 
     public static MemoryData fetchMemory() {
-        try {
-            Runtime runtime = Runtime.getRuntime();
-            return new MemoryData(runtime.totalMemory() - runtime.freeMemory(), runtime.maxMemory());
-        } catch (Exception e) {
-            return new MemoryData(0, 0);
-        }
+        Runtime runtime = Runtime.getRuntime();
+        return new MemoryData(runtime.totalMemory() - runtime.freeMemory(), runtime.maxMemory());
     }
 
     // ── Ping ────────────────────────────────────────────────────

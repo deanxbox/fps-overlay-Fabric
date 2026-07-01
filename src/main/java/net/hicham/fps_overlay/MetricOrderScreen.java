@@ -80,14 +80,12 @@ public class MetricOrderScreen extends Screen {
         clampScroll();
         layoutRowWidgets();
 
-        // Reset all button
         resetAllButton = addRenderableWidget(
                 Button.builder(Component.translatable("button.fps_overlay.reset_all_metrics"),
                         button -> resetAllMetrics())
                         .bounds(this.width / 2 - 165, this.height - 28, 120, 20)
                         .build());
 
-        // Done button
         doneButton = addRenderableWidget(
                 Button.builder(Component.translatable("gui.done"), button -> onClose())
                         .bounds(this.width / 2 + 10, this.height - 28, 155, 20)
@@ -194,7 +192,6 @@ public class MetricOrderScreen extends Screen {
     // ── Render ────────────────────────────────────────────────────────────────
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        // Background
         g.fill(0, 0, this.width, this.height, COL_BG_SCREEN);
 
         int listLeft = getListLeft();
@@ -222,7 +219,6 @@ public class MetricOrderScreen extends Screen {
                     : isHovered ? COL_BORDER_HI
                             : COL_BORDER;
 
-            // Row background + border
             g.fill(listLeft, rowY, listLeft + LIST_WIDTH, rowY + 24, bgColor);
             drawBorder(g, listLeft, rowY, listLeft + LIST_WIDTH, rowY + 24, borderColor);
 
@@ -232,7 +228,6 @@ public class MetricOrderScreen extends Screen {
             g.fill(badgeX, rowY + 6, badgeX + 14, rowY + 18, COL_BORDER);
             drawCenteredText(g, badge, badgeX + 7, rowY + 8, TEXT_MUTED);
 
-            // Metric name
             g.text(font, defaultName,
                     listLeft + ORDER_WIDTH + TOGGLE_WIDTH + 6, rowY + 4, TEXT_PRIMARY, true);
 
@@ -245,7 +240,6 @@ public class MetricOrderScreen extends Screen {
                         TEXT_MUTED, false);
             }
 
-            // Drag handle label
             String handleLabel = isDragging
                     ? Component.translatable("text.fps_overlay.dragging").getString()
                     : ":::";

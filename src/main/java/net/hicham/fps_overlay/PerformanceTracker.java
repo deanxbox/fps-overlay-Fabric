@@ -78,22 +78,18 @@ public class PerformanceTracker {
         }
         lastUpdateTime = currentTime;
 
-        // FPS & frame analysis
         currentFps = Math.max(0, client.getFps());
         averageFps = frameTracker.calculateAverageFps();
         onePercentLow = frameTracker.calculateOnePercentLow();
 
-        // Network
         currentPing = MetricProvider.fetchPing(client);
 
         updateMinMaxStats();
 
-        // Memory
         MetricProvider.MemoryData memory = MetricProvider.fetchMemory();
         usedMemory = memory.used();
         maxMemory = memory.max();
 
-        // Tick
         if (client.getSingleplayerServer() != null) {
             MetricProvider.TickData tick = MetricProvider.fetchTickData(client);
             currentMspt = tick.mspt();
@@ -111,13 +107,11 @@ public class PerformanceTracker {
             }
         }
 
-        // Chunks
         MetricProvider.ChunkData chunks = MetricProvider.fetchChunks(client);
         loadedChunks = chunks.loaded();
         visibleChunks = chunks.visible();
         completedChunks = chunks.completed();
 
-        // Location
         MetricProvider.LocationData location = MetricProvider.fetchLocation(client);
         coordinatesText = location.coordinates();
         biomeText = location.biome();
