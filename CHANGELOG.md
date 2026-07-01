@@ -1,21 +1,19 @@
-## FPS Overlay v5.3
+## v5.3.1
+* Fixed AVG FPS and 1% Low being capped by HUD framerate-limiting mods (e.g. Gnetum). Frame timing is now sampled from the core render loop instead of the HUD render callback, so it reflects true framerate regardless of HUD throttling settings from other mods.
 
-- Fixed TPS and MSPT showing "N/A" on dedicated servers
-- OP players receive exact tick data via the vanilla debug sample stream
-- Non-OP players receive an estimated TPS based on server time packets
-- support for 26.2
+## v5.3
+* Fixed TPS and MSPT showing "N/A" on dedicated servers.
+* OP players receive exact tick data via the vanilla debug sample stream.
+* Non-OP players receive an estimated TPS based on server time packets.
+* Support for 26.2.
 
-## FPS Overlay v5.2
+## v5.2
+* New: "Show Metric Labels" toggle in General HUD settings. Turn it off and your HUD shows only the numbers and units (like `100fps | 10ms`), with no text clutter.
+* Fixed the FPS drop caused by the graph. It was drawing each bar one pixel at a time, hammering the GPU. It now draws each bar in a single operation, cutting GPU work by up to 50x.
+* Graph overhead when hidden is now zero. Previously the game still calculated graph data even when the graph wasn't visible.
+* A couple of smaller internal cleanups to reduce unnecessary memory usage during startup.
 
-### New
-* **Hide metric labels** New toggle in General HUD settings: "Show Metric Labels." Turn it off and your HUD shows only the numbers and units (like `100fps | 10ms`), with no text clutter. Great for a minimal look.
-
-### Performance fixes
-* **Fixed the FPS drop caused by the graph** This was the main bug from last version. The graph was drawing each bar one pixel at a time, which hammered the GPU. It now draws each bar in a single operation, cutting GPU work by up to 50x.
-* **Graph overhead when hidden is now zero** Previously the game was still calculating graph data even when the graph wasn't visible. That's fixed — it skips all graph processing when you have it turned off.
-* **Internal Cleanups** A couple of smaller internal cleanups to reduce unnecessary memory usage during startup.
-
-## FPS Overlay v5.1
+## v5.1
 
 This release focuses on stability, compliance, and accuracy.
 No new features — just making sure everything that's there works perfectly.
