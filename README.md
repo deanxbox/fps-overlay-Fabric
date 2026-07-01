@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="common/src/main/resources/assets/icon.png" width="128" alt="FPS Overlay Logo">
+  <img src="src/main/resources/assets/icon.png" width="128" alt="FPS Overlay Logo">
   <h1>FPS Overlay</h1>
   <p><strong>A clean, highly customizable performance overlay for Minecraft.</strong></p>
   
