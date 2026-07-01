@@ -7,14 +7,11 @@
   [![CurseForge Downloads](https://img.shields.io/curseforge/dt/1341801?style=flat-square&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/fpsoverlay)
   [![License](https://img.shields.io/github/license/hihcam/fps-overlay-Fabric?style=flat-square&color=blue)](LICENSE)
 </div>
-
 <br>
 
 FPS Overlay gives you exactly the performance metrics you need without cluttering your screen. It replaces the overwhelming F3 debug menu with a beautiful, lightweight heads-up display.
 
 It is a **client-side only** mod built for both Fabric and NeoForge.
-
----
 
 ## Requirements
 
@@ -23,8 +20,6 @@ It is a **client-side only** mod built for both Fabric and NeoForge.
 | [YetAnotherConfigLib](https://modrinth.com/mod/yacl) | Fabric & NeoForge | ✅ Required |
 | [Fabric API](https://modrinth.com/mod/fabric-api) | Fabric only | ✅ Required |
 | [Mod Menu](https://modrinth.com/mod/modmenu) | Fabric only | ⬜ Optional |
-
----
 
 ## Features
 
@@ -53,6 +48,7 @@ Grab the latest release for your preferred mod loader:
 Press `P` while in-game (by default) to open the configuration hub, powered by YetAnotherConfigLib.
 
 From here you can:
+
 * Enable or disable individual stats.
 * Reorder metrics using a drag-and-drop menu.
 * Build custom theme color palettes.
@@ -80,7 +76,7 @@ All keybinds can be rebound in the standard Minecraft controls menu or disabled 
 
 This project uses Architectury to build for both Fabric and NeoForge simultaneously.
 
-1. Clone the repository: `git clone https://github.com/hichamdev/fps-overlay-Fabric.git`
+1. Clone the repository: `git clone https://github.com/hihcam/fps-overlay-Fabric.git`
 2. Open a terminal in the project directory.
 3. Run `./gradlew build` (or `gradlew.bat build` on Windows).
 4. The compiled `.jar` files will be in `fabric/build/libs/` and `neoforge/build/libs/`.
