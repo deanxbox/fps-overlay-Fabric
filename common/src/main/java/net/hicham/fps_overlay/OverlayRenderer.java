@@ -49,7 +49,6 @@ public class OverlayRenderer {
             return;
         }
         PerformanceTracker tracker = PerformanceTracker.getInstance();
-        tracker.recordFrame();
         long dataVersion = getRenderDataVersion(config, tracker);
 
         List<OverlayLine> lines = getPreparedLines(config, tracker, false, dataVersion);
@@ -136,8 +135,7 @@ public class OverlayRenderer {
         }
 
         if (activeConfig.appearance.overlayStyle == ModConfig.OverlayStyle.NAVBAR) {
-            int maxContentWidth = Math.max(40, bounds.width() - (PANEL_PADDING * 2));
-            renderNavbar(context, font, activeConfig, layoutNavbarRows(font, lines, maxContentWidth), bounds, fadeAlpha);
+            renderNavbar(context, font, activeConfig, layout.navbarRows(), bounds, fadeAlpha);
         } else {
             renderVertical(context, font, activeConfig, lines, bounds, fadeAlpha);
         }
@@ -453,6 +451,12 @@ public class OverlayRenderer {
             case FRAME_TIME -> new OverlayLine(metric, metricLabel,
                     ONE_DECIMAL.format(tracker.getCurrentFrameTimeMs()), translated(metric.getUnitKey()),
                     tracker.getCurrentFrameTimeMs());
+            case AVG_FRAME_TIME -> {
+                double averageFrameTime = liveMetric ? tracker.getLiveAverageFrameTimeMs()
+                        : tracker.getAverageFrameTimeMs();
+                yield new OverlayLine(metric, metricLabel, ONE_DECIMAL.format(averageFrameTime),
+                        translated(metric.getUnitKey()), averageFrameTime);
+            }
             case LOW_1 -> {
                 int onePercentLow = liveMetric ? tracker.getLiveOnePercentLow() : tracker.getOnePercentLow();
                 yield new OverlayLine(metric, metricLabel,
@@ -464,6 +468,19 @@ public class OverlayRenderer {
                 yield new OverlayLine(metric, metricLabel,
                         pointOnePercentLow > 0 ? String.valueOf(pointOnePercentLow) : "N/A",
                         translated(metric.getUnitKey()), pointOnePercentLow > 0 ? (double) pointOnePercentLow : null);
+            }
+            case FRAME_TIME_HIGH_1 -> {
+                double onePercentFrameTimeHigh = tracker.getOnePercentFrameTimeHighMs();
+                yield new OverlayLine(metric, metricLabel,
+                        onePercentFrameTimeHigh > 0 ? ONE_DECIMAL.format(onePercentFrameTimeHigh) : "N/A",
+                        translated(metric.getUnitKey()), onePercentFrameTimeHigh > 0 ? onePercentFrameTimeHigh : null);
+            }
+            case FRAME_TIME_HIGH_01 -> {
+                double pointOnePercentFrameTimeHigh = tracker.getPointOnePercentFrameTimeHighMs();
+                yield new OverlayLine(metric, metricLabel,
+                        pointOnePercentFrameTimeHigh > 0 ? ONE_DECIMAL.format(pointOnePercentFrameTimeHigh) : "N/A",
+                        translated(metric.getUnitKey()),
+                        pointOnePercentFrameTimeHigh > 0 ? pointOnePercentFrameTimeHigh : null);
             }
             case MEMORY -> createMemoryLine(activeConfig, tracker, metric, metricLabel);
             case PING -> new OverlayLine(metric, metricLabel,
@@ -504,8 +521,11 @@ public class OverlayRenderer {
             case FPS -> new OverlayLine(metric, metricLabel, "144", translated(metric.getUnitKey()), 144.0);
             case AVG_FPS -> new OverlayLine(metric, metricLabel, "138", translated(metric.getUnitKey()), 138.0);
             case FRAME_TIME -> new OverlayLine(metric, metricLabel, "6.9", translated(metric.getUnitKey()), 6.9);
+            case AVG_FRAME_TIME -> new OverlayLine(metric, metricLabel, "7.2", translated(metric.getUnitKey()), 7.2);
             case LOW_1 -> new OverlayLine(metric, metricLabel, "92", translated(metric.getUnitKey()), 92.0);
             case LOW_01 -> new OverlayLine(metric, metricLabel, "71", translated(metric.getUnitKey()), 71.0);
+            case FRAME_TIME_HIGH_1 -> new OverlayLine(metric, metricLabel, "10.9", translated(metric.getUnitKey()), 10.9);
+            case FRAME_TIME_HIGH_01 -> new OverlayLine(metric, metricLabel, "14.1", translated(metric.getUnitKey()), 14.1);
             case MEMORY -> switch (activeConfig.hud.memoryDisplayMode) {
                 case USED_GB -> new OverlayLine(metric, metricLabel,
                         formatMemoryValue(3.4, activeConfig.hud.memoryUnit),
@@ -553,12 +573,16 @@ public class OverlayRenderer {
     private static boolean hasFrameLiveMetrics(ModConfig activeConfig) {
         return isMetricFrameLive(activeConfig, OverlayMetric.FPS)
                 || isMetricFrameLive(activeConfig, OverlayMetric.AVG_FPS)
+                || isMetricFrameLive(activeConfig, OverlayMetric.AVG_FRAME_TIME)
                 || isMetricFrameLive(activeConfig, OverlayMetric.LOW_1)
                 || isMetricFrameLive(activeConfig, OverlayMetric.LOW_01);
     }
 
     private static boolean isMetricFrameLive(ModConfig activeConfig, OverlayMetric metric) {
-        return activeConfig.hud.isMetricEnabled(metric) && isLiveMetric(activeConfig, metric);
+        return switch (metric) {
+            case FPS, AVG_FPS, AVG_FRAME_TIME -> activeConfig.hud.isMetricEnabled(metric) && isLiveMetric(activeConfig, metric);
+            default -> false;
+        };
     }
 
     private static long getRenderDataVersion(ModConfig activeConfig, PerformanceTracker tracker) {
@@ -654,7 +678,8 @@ public class OverlayRenderer {
         return switch (line.metric()) {
             case FPS, AVG_FPS, LOW_1, LOW_01 -> value >= thresholds.fpsGood ? getGoodColor(activeConfig)
                     : value >= thresholds.fpsWarning ? getWarningColor(activeConfig) : getBadColor(activeConfig);
-            case FRAME_TIME, MSPT -> value <= thresholds.frameTimeGood ? getGoodColor(activeConfig)
+            case FRAME_TIME, AVG_FRAME_TIME, FRAME_TIME_HIGH_1, FRAME_TIME_HIGH_01, MSPT ->
+                    value <= thresholds.frameTimeGood ? getGoodColor(activeConfig)
                     : value <= thresholds.frameTimeWarning ? getWarningColor(activeConfig) : getBadColor(activeConfig);
             case MEMORY, CHUNKS -> value <= thresholds.memoryGood ? getGoodColor(activeConfig)
                     : value <= thresholds.memoryWarning ? getWarningColor(activeConfig) : getBadColor(activeConfig);

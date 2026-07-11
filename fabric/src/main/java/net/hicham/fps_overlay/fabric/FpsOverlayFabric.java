@@ -48,6 +48,7 @@ public class FpsOverlayFabric implements ClientModInitializer {
 
             OverlayRenderer.render(guiGraphics, client);
         });
+
     }
 
     private void registerKeyBindings() {

@@ -43,7 +43,7 @@ public class ConfigManager {
             LOGGER.info("Configuration manager initialized successfully");
         } catch (Exception e) {
             LOGGER.error("Failed to initialize configuration", e);
-            INITIALIZED.set(true);
+            INITIALIZED.set(false);
         }
     }
 

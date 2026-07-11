@@ -9,3 +9,17 @@ dependencies {
     // YACL API is referenced by common config screen code; each platform supplies its runtime variant.
     compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric"
 }
+
+tasks.register("frameSamplingTest", JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "net.hicham.fps_overlay.PerformanceTrackerFrameSamplingTest"
+}
+
+tasks.named("test").configure {
+    failOnNoDiscoveredTests = false
+}
+
+tasks.named("check").configure {
+    dependsOn tasks.named("frameSamplingTest")
+}

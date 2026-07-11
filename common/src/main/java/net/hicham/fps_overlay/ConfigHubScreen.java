@@ -33,20 +33,20 @@ public class ConfigHubScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("button.fps_overlay.open_settings"), button -> {
             if (minecraft != null) {
-                minecraft.setScreen(ConfigScreenFactory.createSettingsScreen(this));
+                minecraft.setScreenAndShow(ConfigScreenFactory.createSettingsScreen(this));
             }
         }).bounds(contentX, y, WIDE_BUTTON_WIDTH, BUTTON_HEIGHT).build());
         y += BUTTON_HEIGHT + BUTTON_GAP;
 
         addRenderableWidget(Button.builder(Component.translatable("button.fps_overlay.edit_position"), button -> {
             if (minecraft != null) {
-                minecraft.setScreen(new PositionEditorScreen(this, FpsOverlayMod.getConfigForEditing()));
+                minecraft.setScreenAndShow(new PositionEditorScreen(this, FpsOverlayMod.getConfigForEditing()));
             }
         }).bounds(leftX, y, HALF_BUTTON_WIDTH, BUTTON_HEIGHT).build());
 
         addRenderableWidget(Button.builder(Component.translatable("button.fps_overlay.arrange_metrics"), button -> {
             if (minecraft != null) {
-                minecraft.setScreen(new MetricOrderScreen(this, FpsOverlayMod.getConfigForEditing()));
+                minecraft.setScreenAndShow(new MetricOrderScreen(this, FpsOverlayMod.getConfigForEditing()));
             }
         }).bounds(rightX, y, HALF_BUTTON_WIDTH, BUTTON_HEIGHT).build());
 
@@ -57,7 +57,7 @@ public class ConfigHubScreen extends Screen {
     @Override
     public void onClose() {
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.setScreenAndShow(parent);
         }
     }
 

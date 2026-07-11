@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class PerformanceTracker {
     private static final PerformanceTracker INSTANCE = new PerformanceTracker();
@@ -29,7 +28,7 @@ public class PerformanceTracker {
     private final Object frameTimeLock = new Object();
     private final long[] frameTimeRingBuffer = new long[MAX_FRAME_SAMPLES];
     private final long[] frameTimeScratch = new long[MAX_FRAME_SAMPLES];
-    private final AtomicLong sumOfDeltasNanos = new AtomicLong(0);
+    private long sumOfDeltasNanos = 0;
     private volatile int ringHead = 0;
     private volatile int ringSize = 0;
     private final EnumMap<OverlayMetric, Long> lastMetricUpdateTimes = new EnumMap<>(OverlayMetric.class);
@@ -37,11 +36,14 @@ public class PerformanceTracker {
     private int currentFps = 0;
     private volatile double rawFrameTimeMs = 0;
     private double displayedFrameTimeMs = 0;
+    private double averageFrameTimeMs = 0;
     private long usedMemory = 0;
     private long maxMemory = 0;
     private int currentPing = 0;
     private int onePercentLow = 0;
     private int pointOnePercentLow = 0;
+    private double onePercentFrameTimeHighMs = 0;
+    private double pointOnePercentFrameTimeHighMs = 0;
     private double currentMspt = 0;
     private double currentTps = 20.0;
     private int loadedChunks = 0;
@@ -74,6 +76,7 @@ public class PerformanceTracker {
 
     private final int[] fpsGraphBuffer = new int[GRAPH_SAMPLE_CAPACITY];
     private final int[] graphCopyBuffer = new int[GRAPH_SAMPLE_CAPACITY];
+    private int[] graphReturnBuffer = new int[0];
     private final int[] fpsRangeScratch = new int[GRAPH_SAMPLE_CAPACITY];
     private final Object graphLock = new Object();
     private int graphIndex = 0;
@@ -81,6 +84,7 @@ public class PerformanceTracker {
 
     private final int[] pingHistoryBuffer = new int[PING_HISTORY_CAPACITY];
     private final int[] pingGraphCopyBuffer = new int[PING_HISTORY_CAPACITY];
+    private int[] pingGraphReturnBuffer = new int[0];
     private final int[] pingRangeScratch = new int[PING_HISTORY_CAPACITY];
     private final Object pingHistoryLock = new Object();
     private int pingHistoryIndex = 0;
@@ -90,6 +94,7 @@ public class PerformanceTracker {
     private volatile long frameDataVersion = 0;
     private volatile long lastFrameTimeNano = 0;
     private volatile long lastGraphSampleTime = 0;
+    private volatile long lastPingSampleTime = 0;
     private volatile long lastSignificantChangeTimeMs = System.currentTimeMillis();
 
     private PerformanceTracker() {
@@ -111,7 +116,8 @@ public class PerformanceTracker {
         long currentTime = System.currentTimeMillis();
         boolean changed = false;
 
-        if (shouldRefreshAny(currentTime, OverlayMetric.REAL_TIME, OverlayMetric.DAY_COUNT, OverlayMetric.DAY_TIME)) {
+        if (isAnyMetricEnabled(OverlayMetric.REAL_TIME, OverlayMetric.DAY_COUNT, OverlayMetric.DAY_TIME)
+                && shouldRefreshAny(currentTime, OverlayMetric.REAL_TIME, OverlayMetric.DAY_COUNT, OverlayMetric.DAY_TIME)) {
             TimeData timeData = fetchTimeData(client);
             boolean timeChanged = !realTimeText.equals(timeData.realTime())
                     || !dayCountText.equals(timeData.dayCount())
@@ -123,7 +129,9 @@ public class PerformanceTracker {
             changed |= timeChanged;
         }
 
-        if (shouldRefreshAny(currentTime, OverlayMetric.COORDS, OverlayMetric.BIOME, OverlayMetric.DIMENSION,
+        if (isAnyMetricEnabled(OverlayMetric.COORDS, OverlayMetric.BIOME, OverlayMetric.DIMENSION,
+                OverlayMetric.FACING, OverlayMetric.CHUNK_COORDS, OverlayMetric.LIGHT)
+                && shouldRefreshAny(currentTime, OverlayMetric.COORDS, OverlayMetric.BIOME, OverlayMetric.DIMENSION,
                 OverlayMetric.FACING, OverlayMetric.CHUNK_COORDS, OverlayMetric.LIGHT)) {
             ExtendedLocationData location = fetchLocationData(client);
             boolean locationChanged = !coordinatesText.equals(location.coordinates())
@@ -147,98 +155,124 @@ public class PerformanceTracker {
             sampleGraph(currentTime, Math.max(0, client.getFps()));
         }
 
-        if (shouldRefreshMetric(OverlayMetric.FPS, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.FPS) && shouldRefreshMetric(OverlayMetric.FPS, currentTime)) {
             int previousFps = currentFps;
             currentFps = Math.max(0, client.getFps());
             markRefreshed(currentTime, OverlayMetric.FPS);
             updateFpsMinMax();
-            changed |= Math.abs(currentFps - previousFps) > 2;
+            changed |= currentFps != previousFps;
         }
-        if (shouldRefreshMetric(OverlayMetric.AVG_FPS, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.AVG_FPS) && shouldRefreshMetric(OverlayMetric.AVG_FPS, currentTime)) {
             double previousAverageFps = averageFps;
             averageFps = calculateAverageFps();
             markRefreshed(currentTime, OverlayMetric.AVG_FPS);
-            changed |= Math.abs(previousAverageFps - averageFps) > 1.0;
+            changed |= Double.compare(previousAverageFps, averageFps) != 0;
         }
-        if (shouldRefreshMetric(OverlayMetric.LOW_1, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.AVG_FRAME_TIME)
+                && shouldRefreshMetric(OverlayMetric.AVG_FRAME_TIME, currentTime)) {
+            double previousAverageFrameTime = averageFrameTimeMs;
+            averageFrameTimeMs = calculateAverageFrameTimeMs();
+            markRefreshed(currentTime, OverlayMetric.AVG_FRAME_TIME);
+            changed |= Double.compare(previousAverageFrameTime, averageFrameTimeMs) != 0;
+        }
+        if (isMetricEnabled(OverlayMetric.LOW_1) && shouldRefreshMetric(OverlayMetric.LOW_1, currentTime)) {
             int previousOnePercentLow = onePercentLow;
             onePercentLow = calculateOnePercentLow();
             markRefreshed(currentTime, OverlayMetric.LOW_1);
-            changed |= Math.abs(previousOnePercentLow - onePercentLow) > 1;
+            changed |= previousOnePercentLow != onePercentLow;
         }
-        if (shouldRefreshMetric(OverlayMetric.LOW_01, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.LOW_01) && shouldRefreshMetric(OverlayMetric.LOW_01, currentTime)) {
             int previousPointOnePercentLow = pointOnePercentLow;
             pointOnePercentLow = calculatePointOnePercentLow();
             markRefreshed(currentTime, OverlayMetric.LOW_01);
-            changed |= Math.abs(previousPointOnePercentLow - pointOnePercentLow) > 1;
+            changed |= previousPointOnePercentLow != pointOnePercentLow;
         }
-        if (shouldRefreshMetric(OverlayMetric.FRAME_TIME, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.FRAME_TIME_HIGH_1)
+                && shouldRefreshMetric(OverlayMetric.FRAME_TIME_HIGH_1, currentTime)) {
+            double previousOnePercentFrameTimeHigh = onePercentFrameTimeHighMs;
+            onePercentFrameTimeHighMs = calculateOnePercentFrameTimeHighMs();
+            markRefreshed(currentTime, OverlayMetric.FRAME_TIME_HIGH_1);
+            changed |= Double.compare(previousOnePercentFrameTimeHigh, onePercentFrameTimeHighMs) != 0;
+        }
+        if (isMetricEnabled(OverlayMetric.FRAME_TIME_HIGH_01)
+                && shouldRefreshMetric(OverlayMetric.FRAME_TIME_HIGH_01, currentTime)) {
+            double previousPointOnePercentFrameTimeHigh = pointOnePercentFrameTimeHighMs;
+            pointOnePercentFrameTimeHighMs = calculatePointOnePercentFrameTimeHighMs();
+            markRefreshed(currentTime, OverlayMetric.FRAME_TIME_HIGH_01);
+            changed |= Double.compare(previousPointOnePercentFrameTimeHigh, pointOnePercentFrameTimeHighMs) != 0;
+        }
+        if (isMetricEnabled(OverlayMetric.FRAME_TIME) && shouldRefreshMetric(OverlayMetric.FRAME_TIME, currentTime)) {
             double previousFrameTime = displayedFrameTimeMs;
             displayedFrameTimeMs = rawFrameTimeMs;
             markRefreshed(currentTime, OverlayMetric.FRAME_TIME);
-            changed |= Math.abs(previousFrameTime - displayedFrameTimeMs) > 0.3;
+            changed |= Double.compare(previousFrameTime, displayedFrameTimeMs) != 0;
         }
 
-        if (shouldRefreshMetric(OverlayMetric.MEMORY, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.MEMORY) && shouldRefreshMetric(OverlayMetric.MEMORY, currentTime)) {
             long previousUsedMemory = usedMemory;
             MemoryData memory = fetchMemoryData();
             usedMemory = memory.used();
             maxMemory = memory.max();
             markRefreshed(currentTime, OverlayMetric.MEMORY);
-            changed |= Math.abs(previousUsedMemory - usedMemory) > (8L * 1024L * 1024L);
+            changed |= previousUsedMemory != usedMemory;
         }
 
         boolean refreshNetwork = config.hud.showPingGraph
-                || shouldRefreshAny(currentTime, OverlayMetric.PING, OverlayMetric.JITTER, OverlayMetric.PACKET_LOSS);
+                || (isAnyMetricEnabled(OverlayMetric.PING, OverlayMetric.JITTER, OverlayMetric.PACKET_LOSS)
+                && shouldRefreshAny(currentTime, OverlayMetric.PING, OverlayMetric.JITTER, OverlayMetric.PACKET_LOSS));
         if (refreshNetwork) {
             int sampledPing = fetchCurrentPing(client);
-            boolean refreshPingStats = shouldRefreshMetric(OverlayMetric.JITTER, currentTime)
-                    || shouldRefreshMetric(OverlayMetric.PACKET_LOSS, currentTime);
+            boolean refreshPingStats = (isMetricEnabled(OverlayMetric.JITTER)
+                    && shouldRefreshMetric(OverlayMetric.JITTER, currentTime))
+                    || (isMetricEnabled(OverlayMetric.PACKET_LOSS)
+                    && shouldRefreshMetric(OverlayMetric.PACKET_LOSS, currentTime));
             if (config.hud.showPingGraph || refreshPingStats) {
-                samplePingHistory(sampledPing);
+                samplePingHistory(sampledPing, currentTime);
             }
-            if (shouldRefreshMetric(OverlayMetric.PING, currentTime)) {
+            if (isMetricEnabled(OverlayMetric.PING) && shouldRefreshMetric(OverlayMetric.PING, currentTime)) {
                 int previousPing = currentPing;
                 currentPing = sampledPing;
                 updatePingMinMax();
                 markRefreshed(currentTime, OverlayMetric.PING);
-                changed |= Math.abs(currentPing - previousPing) > 5;
+                changed |= currentPing != previousPing;
             }
             if (refreshPingStats) {
                 int[] pingSamples = copyPingSamples();
-                if (shouldRefreshMetric(OverlayMetric.JITTER, currentTime)) {
+                if (isMetricEnabled(OverlayMetric.JITTER) && shouldRefreshMetric(OverlayMetric.JITTER, currentTime)) {
                     double previousJitter = currentJitterMs;
                     currentJitterMs = calculateJitter(pingSamples);
                     markRefreshed(currentTime, OverlayMetric.JITTER);
-                    changed |= Math.abs(currentJitterMs - previousJitter) > 1.0;
+                    changed |= Double.compare(currentJitterMs, previousJitter) != 0;
                 }
-                if (shouldRefreshMetric(OverlayMetric.PACKET_LOSS, currentTime)) {
+                if (isMetricEnabled(OverlayMetric.PACKET_LOSS)
+                        && shouldRefreshMetric(OverlayMetric.PACKET_LOSS, currentTime)) {
                     double previousPacketLoss = currentPacketLossPercent;
                     currentPacketLossPercent = calculatePingSpikeRate(pingSamples);
                     markRefreshed(currentTime, OverlayMetric.PACKET_LOSS);
-                    changed |= Math.abs(currentPacketLossPercent - previousPacketLoss) > 0.5;
+                    changed |= Double.compare(currentPacketLossPercent, previousPacketLoss) != 0;
                 }
             }
         }
 
-        boolean refreshTick = shouldRefreshAny(currentTime, OverlayMetric.MSPT, OverlayMetric.TPS);
+        boolean refreshTick = isAnyMetricEnabled(OverlayMetric.MSPT, OverlayMetric.TPS)
+                && shouldRefreshAny(currentTime, OverlayMetric.MSPT, OverlayMetric.TPS);
         if (refreshTick) {
             TickData tick = fetchTickData(client);
-            if (shouldRefreshMetric(OverlayMetric.MSPT, currentTime)) {
+            if (isMetricEnabled(OverlayMetric.MSPT) && shouldRefreshMetric(OverlayMetric.MSPT, currentTime)) {
                 double previousMspt = currentMspt;
                 currentMspt = tick.mspt();
                 markRefreshed(currentTime, OverlayMetric.MSPT);
-                changed |= Math.abs(currentMspt - previousMspt) > 0.5;
+                changed |= Double.compare(currentMspt, previousMspt) != 0;
             }
-            if (shouldRefreshMetric(OverlayMetric.TPS, currentTime)) {
+            if (isMetricEnabled(OverlayMetric.TPS) && shouldRefreshMetric(OverlayMetric.TPS, currentTime)) {
                 double previousTps = currentTps;
                 currentTps = tick.tps();
                 markRefreshed(currentTime, OverlayMetric.TPS);
-                changed |= Math.abs(currentTps - previousTps) > 0.2;
+                changed |= Double.compare(currentTps, previousTps) != 0;
             }
         }
 
-        if (shouldRefreshMetric(OverlayMetric.CHUNKS, currentTime)) {
+        if (isMetricEnabled(OverlayMetric.CHUNKS) && shouldRefreshMetric(OverlayMetric.CHUNKS, currentTime)) {
             int previousLoaded = loadedChunks;
             int previousVisibleChunks = visibleChunks;
             int previousCompletedChunks = completedChunks;
@@ -258,9 +292,12 @@ public class PerformanceTracker {
         }
     }
 
-    public void recordFrame() {
-        long currentNano = System.nanoTime();
-        if (lastFrameTimeNano != 0) {
+    public void recordFrame(boolean collectSample) {
+        recordFrame(System.nanoTime(), collectSample);
+    }
+
+    void recordFrame(long currentNano, boolean collectSample) {
+        if (lastFrameTimeNano != 0 && collectSample) {
             long delta = currentNano - lastFrameTimeNano;
             rawFrameTimeMs = delta / 1_000_000.0;
             synchronized (frameTimeLock) {
@@ -273,7 +310,7 @@ public class PerformanceTracker {
 
                 frameTimeRingBuffer[ringHead] = delta;
                 ringHead = (ringHead + 1) % MAX_FRAME_SAMPLES;
-                sumOfDeltasNanos.addAndGet(delta - evictedValue);
+                sumOfDeltasNanos += delta - evictedValue;
             }
             frameDataVersion++;
         }
@@ -287,10 +324,13 @@ public class PerformanceTracker {
     public void resetSessionStats() {
         averageFps = 0;
         displayedFrameTimeMs = 0;
+        averageFrameTimeMs = 0;
         onePercentLow = 0;
         pointOnePercentLow = 0;
-        sumOfDeltasNanos.set(0);
+        onePercentFrameTimeHighMs = 0;
+        pointOnePercentFrameTimeHighMs = 0;
         synchronized (frameTimeLock) {
+            sumOfDeltasNanos = 0;
             ringHead = 0;
             ringSize = 0;
             Arrays.fill(frameTimeRingBuffer, 0);
@@ -307,6 +347,8 @@ public class PerformanceTracker {
             pingHistorySize = 0;
             Arrays.fill(pingHistoryBuffer, 0);
         }
+        lastGraphSampleTime = 0;
+        lastPingSampleTime = 0;
 
         minFps = Integer.MAX_VALUE;
         maxFps = 0;
@@ -338,9 +380,11 @@ public class PerformanceTracker {
                 return graphCopyBuffer;
             }
 
-            int[] values = new int[size];
-            System.arraycopy(graphCopyBuffer, 0, values, 0, size);
-            return values;
+            if (graphReturnBuffer.length != size) {
+                graphReturnBuffer = new int[size];
+            }
+            System.arraycopy(graphCopyBuffer, 0, graphReturnBuffer, 0, size);
+            return graphReturnBuffer;
         }
     }
 
@@ -356,9 +400,11 @@ public class PerformanceTracker {
                 return pingGraphCopyBuffer;
             }
 
-            int[] values = new int[size];
-            System.arraycopy(pingGraphCopyBuffer, 0, values, 0, size);
-            return values;
+            if (pingGraphReturnBuffer.length != size) {
+                pingGraphReturnBuffer = new int[size];
+            }
+            System.arraycopy(pingGraphCopyBuffer, 0, pingGraphReturnBuffer, 0, size);
+            return pingGraphReturnBuffer;
         }
     }
 
@@ -390,6 +436,14 @@ public class PerformanceTracker {
         return calculateAverageFps();
     }
 
+    public double getAverageFrameTimeMs() {
+        return averageFrameTimeMs;
+    }
+
+    public double getLiveAverageFrameTimeMs() {
+        return calculateAverageFrameTimeMs();
+    }
+
     public int getOnePercentLow() {
         return onePercentLow;
     }
@@ -404,6 +458,22 @@ public class PerformanceTracker {
 
     public int getLivePointOnePercentLow() {
         return calculatePointOnePercentLow();
+    }
+
+    public double getOnePercentFrameTimeHighMs() {
+        return onePercentFrameTimeHighMs;
+    }
+
+    public double getLiveOnePercentFrameTimeHighMs() {
+        return calculateOnePercentFrameTimeHighMs();
+    }
+
+    public double getPointOnePercentFrameTimeHighMs() {
+        return pointOnePercentFrameTimeHighMs;
+    }
+
+    public double getLivePointOnePercentFrameTimeHighMs() {
+        return calculatePointOnePercentFrameTimeHighMs();
     }
 
     public double getMspt() {
@@ -524,7 +594,8 @@ public class PerformanceTracker {
     }
 
     private void sampleGraph(long currentTime, int fpsValue) {
-        if (currentTime - lastGraphSampleTime < GRAPH_SAMPLE_INTERVAL_MS) {
+        long elapsed = currentTime - lastGraphSampleTime;
+        if (elapsed >= 0 && elapsed < GRAPH_SAMPLE_INTERVAL_MS) {
             return;
         }
         lastGraphSampleTime = currentTime;
@@ -543,7 +614,13 @@ public class PerformanceTracker {
         }
     }
 
-    private void samplePingHistory(int pingValue) {
+    private void samplePingHistory(int pingValue, long currentTime) {
+        long elapsed = currentTime - lastPingSampleTime;
+        if (elapsed >= 0 && elapsed < GRAPH_SAMPLE_INTERVAL_MS) {
+            return;
+        }
+        lastPingSampleTime = currentTime;
+
         synchronized (pingHistoryLock) {
             pingHistoryBuffer[pingHistoryIndex] = pingValue;
             pingHistoryIndex = (pingHistoryIndex + 1) % pingHistoryBuffer.length;
@@ -563,12 +640,25 @@ public class PerformanceTracker {
         long sum;
         synchronized (frameTimeLock) {
             size = ringSize;
-            sum = sumOfDeltasNanos.get();
+            sum = sumOfDeltasNanos;
         }
         if (size == 0 || sum <= 0) {
             return 0;
         }
         return (size * 1_000_000_000.0) / sum;
+    }
+
+    private double calculateAverageFrameTimeMs() {
+        int size;
+        long sum;
+        synchronized (frameTimeLock) {
+            size = ringSize;
+            sum = sumOfDeltasNanos;
+        }
+        if (size == 0 || sum <= 0) {
+            return 0;
+        }
+        return (sum / (double) size) / 1_000_000.0;
     }
 
     private MemoryData fetchMemoryData() {
@@ -604,6 +694,27 @@ public class PerformanceTracker {
     }
 
     private int calculateLowPercentileFps(int minimumSamples, int divisor) {
+        long percentileFrameNanos = calculateHighPercentileFrameNanos(minimumSamples, divisor);
+        if (percentileFrameNanos <= 0) {
+            return 0;
+        }
+        return (int) (1_000_000_000.0 / percentileFrameNanos);
+    }
+
+    private double calculateOnePercentFrameTimeHighMs() {
+        return calculateHighPercentileFrameTimeMs(10, 100);
+    }
+
+    private double calculatePointOnePercentFrameTimeHighMs() {
+        return calculateHighPercentileFrameTimeMs(MIN_POINT_ONE_PERCENT_SAMPLES, 1000);
+    }
+
+    private double calculateHighPercentileFrameTimeMs(int minimumSamples, int divisor) {
+        long percentileFrameNanos = calculateHighPercentileFrameNanos(minimumSamples, divisor);
+        return percentileFrameNanos > 0 ? percentileFrameNanos / 1_000_000.0 : 0;
+    }
+
+    private long calculateHighPercentileFrameNanos(int minimumSamples, int divisor) {
         int sampleCount;
         synchronized (frameTimeLock) {
             if (ringSize < minimumSamples) {
@@ -618,11 +729,7 @@ public class PerformanceTracker {
         }
 
         int index = Math.max(0, sampleCount - 1 - Math.max(1, sampleCount / divisor));
-        long percentileFrameNanos = quickSelect(frameTimeScratch, 0, sampleCount - 1, index);
-        if (percentileFrameNanos <= 0) {
-            return 0;
-        }
-        return (int) (1_000_000_000.0 / percentileFrameNanos);
+        return quickSelect(frameTimeScratch, 0, sampleCount - 1, index);
     }
 
     private double calculateJitter(int[] samples) {
@@ -740,6 +847,13 @@ public class PerformanceTracker {
             return new TickData(mspt, tps);
         }
 
+        if (ServerTickMetrics.isTier1Active()) {
+            return new TickData(ServerTickMetrics.getMSPT(), ServerTickMetrics.getTPS());
+        }
+        if (ServerTickMetrics.isTier2Active()) {
+            return new TickData(-1, ServerTickMetrics.getTier2TPS());
+        }
+
         return new TickData(-1, -1);
     }
 
@@ -758,12 +872,12 @@ public class PerformanceTracker {
         }
 
         try {
-            visible = Math.max(0, client.levelRenderer.countRenderedSections());
+            visible = Math.max(0, client.levelExtractor.countRenderedSections());
         } catch (Exception ignored) {
         }
 
         try {
-            completed = Math.max(0, client.levelRenderer.getVisibleSections().size());
+            completed = Math.max(0, client.levelRenderer.visibleSections().size());
         } catch (Exception ignored) {
             completed = visible;
         }
@@ -931,7 +1045,20 @@ public class PerformanceTracker {
             return true;
         }
         Long lastRefresh = lastMetricUpdateTimes.get(metric);
-        return lastRefresh == null || currentTime - lastRefresh >= interval;
+        return lastRefresh == null || currentTime < lastRefresh || currentTime - lastRefresh >= interval;
+    }
+
+    private boolean isMetricEnabled(OverlayMetric metric) {
+        return config != null && config.hud != null && config.hud.isMetricEnabled(metric);
+    }
+
+    private boolean isAnyMetricEnabled(OverlayMetric... metrics) {
+        for (OverlayMetric metric : metrics) {
+            if (isMetricEnabled(metric)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean shouldRefreshAny(long currentTime, OverlayMetric... metrics) {

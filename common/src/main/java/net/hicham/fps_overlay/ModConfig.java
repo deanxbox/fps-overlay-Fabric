@@ -91,8 +91,11 @@ public class ModConfig {
         public boolean showFps = true;
         public boolean showAverageFps = true;
         public boolean showFrameTime = false;
+        public boolean showAverageFrameTime = false;
         public boolean show1PercentLow = true;
         public boolean show0_1PercentLow = false;
+        public boolean show1PercentFrameTimeHigh = false;
+        public boolean show0_1PercentFrameTimeHigh = false;
         public boolean showMemory = true;
         public boolean showPing = true;
         public boolean showMspt = true;
@@ -127,8 +130,11 @@ public class ModConfig {
                 case FPS -> showFps;
                 case AVG_FPS -> showAverageFps;
                 case FRAME_TIME -> showFrameTime;
+                case AVG_FRAME_TIME -> showAverageFrameTime;
                 case LOW_1 -> show1PercentLow;
                 case LOW_01 -> show0_1PercentLow;
+                case FRAME_TIME_HIGH_1 -> show1PercentFrameTimeHigh;
+                case FRAME_TIME_HIGH_01 -> show0_1PercentFrameTimeHigh;
                 case MEMORY -> showMemory;
                 case PING -> showPing;
                 case MSPT -> showMspt;
@@ -153,8 +159,11 @@ public class ModConfig {
                 case FPS -> showFps = enabled;
                 case AVG_FPS -> showAverageFps = enabled;
                 case FRAME_TIME -> showFrameTime = enabled;
+                case AVG_FRAME_TIME -> showAverageFrameTime = enabled;
                 case LOW_1 -> show1PercentLow = enabled;
                 case LOW_01 -> show0_1PercentLow = enabled;
+                case FRAME_TIME_HIGH_1 -> show1PercentFrameTimeHigh = enabled;
+                case FRAME_TIME_HIGH_01 -> show0_1PercentFrameTimeHigh = enabled;
                 case MEMORY -> showMemory = enabled;
                 case PING -> showPing = enabled;
                 case MSPT -> showMspt = enabled;

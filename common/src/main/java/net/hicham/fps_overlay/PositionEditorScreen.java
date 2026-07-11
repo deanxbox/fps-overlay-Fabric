@@ -94,7 +94,7 @@ public class PositionEditorScreen extends Screen {
     public void onClose() {
         FpsOverlayMod.saveConfigForCurrentContext(config);
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.setScreenAndShow(parent);
         }
     }
 

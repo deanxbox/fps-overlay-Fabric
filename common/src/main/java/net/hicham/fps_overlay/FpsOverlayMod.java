@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +18,7 @@ public class FpsOverlayMod {
     private static final AtomicBoolean MOD_INITIALIZED = new AtomicBoolean(false);
     private static final Object INIT_LOCK = new Object();
     private static ModConfig config;
+    private static Connection serverConnection;
 
     public static void init() {
         LOGGER.info("Initializing Fps Overlay...");
@@ -50,26 +52,28 @@ public class FpsOverlayMod {
                 || client.player == null
                 || client.level == null
                 || client.font == null
-                || client.options.hideGui) {
+                || client.gui.hud.isHidden()) {
             return false;
         }
 
         ModConfig.AutoHideRules rules = config.autoHide;
-        if (client.screen instanceof ConfigHubScreen
-                || client.screen instanceof PositionEditorScreen
-                || client.screen instanceof MetricOrderScreen
-                || (client.screen != null
-                && client.screen.getClass().getName().startsWith("dev.isxander.yacl3"))) {
+        Screen screen = client.gui.screen();
+        if (screen instanceof ConfigHubScreen
+                || screen instanceof PositionEditorScreen
+                || screen instanceof MetricOrderScreen
+                || screen instanceof ProfileNameScreen
+                || screen instanceof ProfileSelectScreen
+                || (screen != null && screen.getClass().getName().startsWith("dev.isxander.yacl3"))) {
             return false;
         }
         if (rules != null) {
             if (rules.hideWithF3 && client.getDebugOverlay().showDebugScreen()) {
                 return false;
             }
-            if (rules.hideInChat && client.screen instanceof ChatScreen) {
+            if (rules.hideInChat && screen instanceof ChatScreen) {
                 return false;
             }
-            if (rules.hideInInventory && client.screen instanceof AbstractContainerScreen<?>) {
+            if (rules.hideInInventory && screen instanceof AbstractContainerScreen<?>) {
                 return false;
             }
             if (rules.hideInScreenshots && client.options.keyScreenshot.isDown()) {
@@ -83,11 +87,31 @@ public class FpsOverlayMod {
     }
 
     public static void onClientTick(Minecraft client) {
-        if (!MOD_INITIALIZED.get() || client == null || client.player == null) {
+        if (!MOD_INITIALIZED.get() || client == null) {
+            return;
+        }
+
+        var listener = client.getConnection();
+        Connection connection = listener != null ? listener.getConnection() : null;
+        if (connection != serverConnection) {
+            serverConnection = connection;
+            ServerTickMetrics.onJoinServer(connection);
+        }
+        if (client.player == null) {
             return;
         }
 
         PerformanceTracker.getInstance().update(client);
+    }
+
+    public static void onFrameRendered(Minecraft client) {
+        boolean collectSample = MOD_INITIALIZED.get()
+                && config != null
+                && config.general.enabled
+                && client != null
+                && client.player != null
+                && client.level != null;
+        PerformanceTracker.getInstance().recordFrame(collectSample);
     }
 
     public static ModConfig getConfig() {
@@ -144,8 +168,8 @@ public class FpsOverlayMod {
         }
 
         try {
-            Screen configScreen = ConfigScreenFactory.createConfigScreen(client.screen);
-            client.setScreen(configScreen);
+            Screen configScreen = ConfigScreenFactory.createConfigScreen(client.gui.screen());
+            client.setScreenAndShow(configScreen);
         } catch (Exception e) {
             LOGGER.error("Failed to open config screen", e);
         }
@@ -156,7 +180,7 @@ public class FpsOverlayMod {
             return;
         }
 
-        client.setScreen(new PositionEditorScreen(client.screen, getConfigForEditing()));
+        client.setScreenAndShow(new PositionEditorScreen(client.gui.screen(), getConfigForEditing()));
     }
 
     public static void resetStatistics() {

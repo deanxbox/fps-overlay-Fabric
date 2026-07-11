@@ -162,7 +162,7 @@ public class MetricOrderScreen extends Screen {
         saveOrder();
         FpsOverlayMod.saveConfigForCurrentContext(config);
         if (minecraft != null) {
-            minecraft.setScreen(parent);
+            minecraft.setScreenAndShow(parent);
         }
     }
 

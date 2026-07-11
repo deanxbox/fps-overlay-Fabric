@@ -22,11 +22,14 @@
       "net.hicham.fps_overlay.fabric.ModMenuIntegration"
     ]
   },
+  "mixins": [
+    "fps_overlay.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",
     "minecraft": "${minecraft_version}",
-    "yet_another_config_lib_v3": ">=3.9.3"
+    "yet_another_config_lib_v3": ">=3.9.5"
   },
   "suggests": {
     "modmenu": "*"

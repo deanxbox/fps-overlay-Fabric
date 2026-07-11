@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "net.hicham.fps_overlay.mixin",
+  "client": [
+    "ClientPacketListenerMixin",
+    "MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

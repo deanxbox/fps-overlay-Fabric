@@ -197,13 +197,13 @@ public class ConfigScreenFactory {
                                 .name(Component.translatable("button.fps_overlay.save_profile"))
                                 .text(Component.translatable("button.fps_overlay.save_profile"))
                                 .description(OptionDescription.of(Component.translatable("tooltip.fps_overlay.save_profile")))
-                                .action((screen, option) -> Minecraft.getInstance().setScreen(
+                                .action((screen, option) -> Minecraft.getInstance().setScreenAndShow(
                                         new ProfileNameScreen((Screen) screen,
                                                 Component.translatable("screen.fps_overlay.save_profile"),
                                                 config.selectedProfile,
                                                 name -> {
                                                     saveProfile(config, name);
-                                                    Minecraft.getInstance().setScreen(createSettingsScreen(parent));
+                                                    Minecraft.getInstance().setScreenAndShow(createSettingsScreen(parent));
                                                 })))
                                 .build())
                         .option(ButtonOption.createBuilder()
@@ -213,7 +213,7 @@ public class ConfigScreenFactory {
                                 .available(hasSelectedProfile(config))
                                 .action((screen, option) -> {
                                     updateSelectedProfile(config);
-                                    Minecraft.getInstance().setScreen(createSettingsScreen(parent));
+                                    Minecraft.getInstance().setScreenAndShow(createSettingsScreen(parent));
                                 })
                                 .build())
                         .option(ButtonOption.createBuilder()
@@ -221,13 +221,13 @@ public class ConfigScreenFactory {
                                 .text(Component.translatable("button.fps_overlay.rename_profile"))
                                 .description(OptionDescription.of(Component.translatable("tooltip.fps_overlay.rename_profile")))
                                 .available(hasSelectedProfile(config))
-                                .action((screen, option) -> Minecraft.getInstance().setScreen(
+                                .action((screen, option) -> Minecraft.getInstance().setScreenAndShow(
                                         new ProfileNameScreen((Screen) screen,
                                                 Component.translatable("screen.fps_overlay.rename_profile"),
                                                 config.selectedProfile,
                                                 name -> {
                                                     renameProfile(config, name);
-                                                    Minecraft.getInstance().setScreen(createSettingsScreen(parent));
+                                                    Minecraft.getInstance().setScreenAndShow(createSettingsScreen(parent));
                                                 })))
                                 .build())
                         .option(ButtonOption.createBuilder()
@@ -237,7 +237,7 @@ public class ConfigScreenFactory {
                                 .available(hasSelectedProfile(config))
                                 .action((screen, option) -> {
                                     deleteProfile(config);
-                                    Minecraft.getInstance().setScreen(createSettingsScreen(parent));
+                                    Minecraft.getInstance().setScreenAndShow(createSettingsScreen(parent));
                                 })
                                 .build())
                         .build())
@@ -247,11 +247,11 @@ public class ConfigScreenFactory {
                                 .name(Component.translatable("option.fps_overlay.configProfile"))
                                 .text(Component.literal(getProfileSelectionValue(config)))
                                 .description(OptionDescription.of(Component.translatable("tooltip.fps_overlay.configProfile")))
-                                .action((screen, option) -> Minecraft.getInstance().setScreen(
+                                .action((screen, option) -> Minecraft.getInstance().setScreenAndShow(
                                         new ProfileSelectScreen((Screen) screen, config,
                                                 profileName -> {
                                                     selectProfile(config, profileName);
-                                                    Minecraft.getInstance().setScreen(createSettingsScreen(parent));
+                                                    Minecraft.getInstance().setScreenAndShow(createSettingsScreen(parent));
                                                 })))
                                 .build())
                         .build())
